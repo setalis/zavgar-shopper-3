@@ -2,6 +2,18 @@
 
 declare(strict_types=1);
 
+use App\Models\Brand;
+use App\Models\Category;
+use App\Models\Channel;
+use App\Models\Collection;
+use App\Models\Product;
+use App\Models\ProductVariant;
+use Shopper\Core\Models\Address;
+use Shopper\Core\Models\Inventory;
+use Shopper\Core\Models\Order;
+use Shopper\Core\Models\Supplier;
+use Shopper\Core\Models\TaxRate;
+use Shopper\Core\Models\TaxZone;
 use Shopper\Models;
 
 return [
@@ -17,7 +29,7 @@ return [
     |
     */
 
-    'address' => Shopper\Core\Models\Address::class,
+    'address' => Address::class,
 
     /*
     |--------------------------------------------------------------------------
@@ -30,7 +42,7 @@ return [
     |
     */
 
-    'brand' => Models\Brand::class,
+    'brand' => Brand::class,
 
     /*
     |--------------------------------------------------------------------------
@@ -43,7 +55,7 @@ return [
     |
     */
 
-    'category' => Models\Category::class,
+    'category' => Category::class,
 
     /*
     |--------------------------------------------------------------------------
@@ -56,7 +68,7 @@ return [
     |
     */
 
-    'collection' => Models\Collection::class,
+    'collection' => Collection::class,
 
     /*
     |--------------------------------------------------------------------------
@@ -69,7 +81,7 @@ return [
     |
     */
 
-    'product' => Models\Product::class,
+    'product' => Product::class,
 
     /*
     |--------------------------------------------------------------------------
@@ -82,7 +94,7 @@ return [
     |
     */
 
-    'variant' => Models\ProductVariant::class,
+    'variant' => ProductVariant::class,
 
     /*
     |--------------------------------------------------------------------------
@@ -109,7 +121,7 @@ return [
     |
     */
 
-    'channel' => Shopper\Core\Models\Channel::class,
+    'channel' => Channel::class,
 
     /*
     |--------------------------------------------------------------------------
@@ -122,7 +134,7 @@ return [
     |
     */
 
-    'inventory' => Shopper\Core\Models\Inventory::class,
+    'inventory' => Inventory::class,
 
     /*
     |--------------------------------------------------------------------------
@@ -135,7 +147,7 @@ return [
     |
     */
 
-    'order' => Shopper\Core\Models\Order::class,
+    'order' => Order::class,
 
     /*
     |--------------------------------------------------------------------------
@@ -148,7 +160,7 @@ return [
     |
     */
 
-    'supplier' => Shopper\Core\Models\Supplier::class,
+    'supplier' => Supplier::class,
 
     /*
     |--------------------------------------------------------------------------
@@ -161,7 +173,7 @@ return [
     |
     */
 
-    'tax_zone' => Shopper\Core\Models\TaxZone::class,
+    'tax_zone' => TaxZone::class,
 
     /*
     |--------------------------------------------------------------------------
@@ -174,6 +186,6 @@ return [
     |
     */
 
-    'tax_rate' => Shopper\Core\Models\TaxRate::class,
+    'tax_rate' => TaxRate::class,
 
 ];

@@ -1,0 +1,34 @@
+import HomeController from './HomeController'
+import ProductController from './ProductController'
+import ProductReviewController from './ProductReviewController'
+import CategoryController from './CategoryController'
+import CollectionController from './CollectionController'
+import BrandController from './BrandController'
+import SearchController from './SearchController'
+import SearchSuggestController from './SearchSuggestController'
+import ContactController from './ContactController'
+import CartController from './CartController'
+import WishlistController from './WishlistController'
+import ZoneController from './ZoneController'
+import CheckoutController from './CheckoutController'
+import StripePaymentController from './StripePaymentController'
+import CheckoutSuccessController from './CheckoutSuccessController'
+const Shop = {
+    HomeController: Object.assign(HomeController, HomeController),
+ProductController: Object.assign(ProductController, ProductController),
+ProductReviewController: Object.assign(ProductReviewController, ProductReviewController),
+CategoryController: Object.assign(CategoryController, CategoryController),
+CollectionController: Object.assign(CollectionController, CollectionController),
+BrandController: Object.assign(BrandController, BrandController),
+SearchController: Object.assign(SearchController, SearchController),
+SearchSuggestController: Object.assign(SearchSuggestController, SearchSuggestController),
+ContactController: Object.assign(ContactController, ContactController),
+CartController: Object.assign(CartController, CartController),
+WishlistController: Object.assign(WishlistController, WishlistController),
+ZoneController: Object.assign(ZoneController, ZoneController),
+CheckoutController: Object.assign(CheckoutController, CheckoutController),
+StripePaymentController: Object.assign(StripePaymentController, StripePaymentController),
+CheckoutSuccessController: Object.assign(CheckoutSuccessController, CheckoutSuccessController),
+}
+
+export default Shop

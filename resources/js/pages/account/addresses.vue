@@ -1,0 +1,458 @@
+<script setup lang="ts">
+import { Head, router, useForm } from '@inertiajs/vue3';
+import {
+    Check,
+    CreditCard,
+    MoreHorizontal,
+    Trash2,
+    Truck,
+} from 'lucide-vue-next';
+import { ref } from 'vue';
+import AddressController from '@/actions/App/Http/Controllers/Account/AddressController';
+import Card from '@/components/shop/card.vue';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { useTrans } from '@/composables/useTrans';
+import { AddressType } from '@/types/shop';
+import type { Address } from '@/types/shop';
+
+type CountryOption = { id: number; name: string; cca2: string };
+
+type AddressForm = {
+    first_name: string;
+    last_name: string;
+    street_address: string;
+    street_address_plus: string;
+    postal_code: string;
+    city: string;
+    state: string;
+    phone_number: string;
+    country_id: number | null;
+    type: AddressType;
+};
+
+defineProps<{
+    addresses: Address[];
+    countries: CountryOption[];
+}>();
+
+const { t } = useTrans();
+
+const editing = ref<Address | null>(null);
+const open = ref<boolean>(false);
+
+const defaults: AddressForm = {
+    first_name: '',
+    last_name: '',
+    street_address: '',
+    street_address_plus: '',
+    postal_code: '',
+    city: '',
+    state: '',
+    phone_number: '',
+    country_id: null,
+    type: AddressType.SHIPPING,
+};
+
+const form = useForm<AddressForm>({ ...defaults });
+
+function startCreate(): void {
+    editing.value = null;
+    form.reset();
+    Object.assign(form, defaults);
+    open.value = true;
+}
+
+function startEdit(address: Address): void {
+    editing.value = address;
+    form.first_name = address.first_name ?? '';
+    form.last_name = address.last_name;
+    form.street_address = address.street_address;
+    form.street_address_plus = address.street_address_plus ?? '';
+    form.postal_code = address.postal_code;
+    form.city = address.city;
+    form.state = address.state ?? '';
+    form.phone_number = address.phone_number ?? '';
+    form.country_id = address.country_id;
+    form.type = address.type;
+    open.value = true;
+}
+
+function submit(): void {
+    const opts = {
+        preserveScroll: true,
+        onSuccess: () => {
+            open.value = false;
+            editing.value = null;
+            form.reset();
+        },
+    };
+
+    if (editing.value) {
+        form.patch(AddressController.update.url(editing.value.id), opts);
+    } else {
+        form.post(AddressController.store.url(), opts);
+    }
+}
+
+function destroy(address: Address): void {
+    if (!window.confirm(t('account.addresses.delete_confirm'))) {
+        return;
+    }
+
+    router.delete(AddressController.destroy.url(address.id), {
+        preserveScroll: true,
+    });
+}
+
+function setDefaultShipping(address: Address): void {
+    router.patch(
+        AddressController.setDefaultShipping.url(address.id),
+        {},
+        { preserveScroll: true },
+    );
+}
+
+function setDefaultBilling(address: Address): void {
+    router.patch(
+        AddressController.setDefaultBilling.url(address.id),
+        {},
+        { preserveScroll: true },
+    );
+}
+</script>
+
+<template>
+    <Head :title="t('account.addresses.title')" />
+
+    <div>
+        <h1 class="font-heading text-2xl font-bold text-ink">
+            {{ t('account.addresses.heading') }}
+        </h1>
+        <p class="mt-1 text-sm text-ink-mute">
+            {{ t('account.addresses.description') }}
+        </p>
+    </div>
+
+    <div class="mt-8 space-y-8">
+        <Button
+            type="button"
+            variant="outline"
+            class="w-full sm:w-auto"
+            @click="startCreate"
+            >{{ t('account.addresses.add') }}</Button
+        >
+
+        <div
+            v-if="addresses.length"
+            class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        >
+            <Card
+                v-for="address in addresses"
+                :key="address.id"
+                class="flex flex-col justify-between"
+            >
+                <div class="flex flex-col gap-4">
+                    <div class="flex items-start justify-between gap-2">
+                        <h4 class="font-heading text-sm font-medium text-ink">
+                            {{ address.first_name }} {{ address.last_name }}
+                        </h4>
+                        <span
+                            v-if="address.type === AddressType.BILLING"
+                            class="inline-flex shrink-0 items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-ink-soft"
+                            >{{ t('account.addresses.billing') }}</span
+                        >
+                    </div>
+
+                    <address
+                        class="flex flex-col text-sm text-ink-mute not-italic"
+                    >
+                        <span>
+                            {{ address.street_address
+                            }}<span v-if="address.street_address_plus"
+                                >, {{ address.street_address_plus }}</span
+                            >
+                        </span>
+                        <span
+                            >{{ address.postal_code }}, {{ address.city }}</span
+                        >
+                        <span v-if="address.country">{{
+                            address.country.name
+                        }}</span>
+                    </address>
+
+                    <div class="space-y-1">
+                        <span
+                            v-if="address.shipping_default"
+                            class="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-ink-soft"
+                        >
+                            <Check class="size-3" aria-hidden="true" />
+                            {{ t('account.addresses.default_shipping') }}
+                        </span>
+                        <span
+                            v-if="address.billing_default"
+                            class="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-ink-soft"
+                        >
+                            <Check class="size-3" aria-hidden="true" />
+                            {{ t('account.addresses.default_billing') }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="mt-4 flex items-center gap-2">
+                    <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        @click="destroy(address)"
+                    >
+                        <Trash2 class="size-3.5" aria-hidden="true" />
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        @click="startEdit(address)"
+                    >
+                        {{ t('account.addresses.edit') }}
+                    </Button>
+                    <DropdownMenu
+                        v-if="
+                            !address.shipping_default ||
+                            !address.billing_default
+                        "
+                    >
+                        <DropdownMenuTrigger as-child>
+                            <Button type="button" size="sm" variant="outline">
+                                <MoreHorizontal
+                                    class="size-3.5"
+                                    aria-hidden="true"
+                                />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                                v-if="!address.shipping_default"
+                                @click="setDefaultShipping(address)"
+                            >
+                                <Truck class="size-4" aria-hidden="true" />
+                                {{
+                                    t('account.addresses.set_default_shipping')
+                                }}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                v-if="!address.billing_default"
+                                @click="setDefaultBilling(address)"
+                            >
+                                <CreditCard class="size-4" aria-hidden="true" />
+                                {{ t('account.addresses.set_default_billing') }}
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            </Card>
+        </div>
+
+        <p v-else class="text-sm text-ink-mute">
+            {{ t('account.addresses.empty') }}
+        </p>
+    </div>
+
+    <Dialog v-model:open="open">
+        <DialogContent class="sm:max-w-2xl">
+            <DialogTitle class="text-lg font-semibold text-ink">
+                {{
+                    editing
+                        ? t('account.addresses.form.update_title')
+                        : t('account.addresses.form.add_title')
+                }}
+            </DialogTitle>
+            <form class="space-y-6" @submit.prevent="submit">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div class="space-y-2">
+                        <Label for="first_name">{{
+                            t('account.addresses.form.first_name')
+                        }}</Label>
+                        <Input
+                            id="first_name"
+                            v-model="form.first_name"
+                            required
+                        />
+                        <p
+                            v-if="form.errors.first_name"
+                            class="mt-1 text-xs text-red-600"
+                        >
+                            {{ form.errors.first_name }}
+                        </p>
+                    </div>
+                    <div class="space-y-2">
+                        <Label for="last_name">{{
+                            t('account.addresses.form.last_name')
+                        }}</Label>
+                        <Input
+                            id="last_name"
+                            v-model="form.last_name"
+                            required
+                        />
+                        <p
+                            v-if="form.errors.last_name"
+                            class="mt-1 text-xs text-red-600"
+                        >
+                            {{ form.errors.last_name }}
+                        </p>
+                    </div>
+                    <div class="space-y-2 sm:col-span-2">
+                        <Label for="street_address">{{
+                            t('account.addresses.form.street_address')
+                        }}</Label>
+                        <Input
+                            id="street_address"
+                            v-model="form.street_address"
+                            required
+                        />
+                        <p
+                            v-if="form.errors.street_address"
+                            class="mt-1 text-xs text-red-600"
+                        >
+                            {{ form.errors.street_address }}
+                        </p>
+                    </div>
+                    <div class="space-y-2 sm:col-span-2">
+                        <Label for="street_address_plus">{{
+                            t('account.addresses.form.street_address_plus')
+                        }}</Label>
+                        <Input
+                            id="street_address_plus"
+                            v-model="form.street_address_plus"
+                        />
+                    </div>
+                    <div class="space-y-2">
+                        <Label for="city">{{
+                            t('account.addresses.form.city')
+                        }}</Label>
+                        <Input id="city" v-model="form.city" required />
+                    </div>
+                    <div class="space-y-2">
+                        <Label for="postal_code">{{
+                            t('account.addresses.form.postal_code')
+                        }}</Label>
+                        <Input
+                            id="postal_code"
+                            v-model="form.postal_code"
+                            required
+                        />
+                    </div>
+                    <div class="space-y-2">
+                        <Label for="state">{{
+                            t('account.addresses.form.state')
+                        }}</Label>
+                        <Input id="state" v-model="form.state" />
+                    </div>
+                    <div class="space-y-2">
+                        <Label for="country_id">{{
+                            t('account.addresses.form.country')
+                        }}</Label>
+                        <Select
+                            :model-value="form.country_id?.toString() ?? ''"
+                            @update:model-value="
+                                (v) => (form.country_id = v ? Number(v) : null)
+                            "
+                        >
+                            <SelectTrigger
+                                id="country_id"
+                                :aria-label="
+                                    t('account.addresses.form.country')
+                                "
+                                class="w-full"
+                            >
+                                <SelectValue
+                                    :placeholder="
+                                        t(
+                                            'account.addresses.form.country_placeholder',
+                                        )
+                                    "
+                                />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem
+                                    v-for="country in countries"
+                                    :key="country.id"
+                                    :value="country.id.toString()"
+                                >
+                                    {{ country.name }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <p
+                            v-if="form.errors.country_id"
+                            class="mt-1 text-xs text-red-600"
+                        >
+                            {{ form.errors.country_id }}
+                        </p>
+                    </div>
+                    <div class="space-y-2 sm:col-span-2">
+                        <Label for="phone_number">{{
+                            t('account.addresses.form.phone_number')
+                        }}</Label>
+                        <Input id="phone_number" v-model="form.phone_number" />
+                    </div>
+                    <fieldset class="space-y-2 sm:col-span-2">
+                        <legend class="text-sm font-medium text-ink">
+                            {{ t('account.addresses.form.type') }}
+                        </legend>
+                        <div class="flex flex-wrap items-center gap-6 pt-1">
+                            <label
+                                class="flex items-center gap-2 text-sm text-ink-soft"
+                            >
+                                <input
+                                    v-model="form.type"
+                                    type="radio"
+                                    :value="AddressType.SHIPPING"
+                                    class="border-rule text-ink focus:ring-brand"
+                                />
+                                {{ t('account.addresses.form.shipping') }}
+                            </label>
+                            <label
+                                class="flex items-center gap-2 text-sm text-ink-soft"
+                            >
+                                <input
+                                    v-model="form.type"
+                                    type="radio"
+                                    :value="AddressType.BILLING"
+                                    class="border-rule text-ink focus:ring-brand"
+                                />
+                                {{ t('account.addresses.form.billing') }}
+                            </label>
+                        </div>
+                    </fieldset>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        @click="open = false"
+                        >{{ t('account.addresses.form.cancel') }}</Button
+                    >
+                    <Button type="submit" :disabled="form.processing">{{
+                        t('account.addresses.form.save')
+                    }}</Button>
+                </div>
+            </form>
+        </DialogContent>
+    </Dialog>
+</template>

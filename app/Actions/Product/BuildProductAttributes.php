@@ -1,0 +1,122 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Actions\Product;
+
+use App\Actions\LocalizeCatalog;
+use App\Models\Product;
+use Illuminate\Support\Collection;
+use Shopper\Core\Enum\FieldType;
+use Shopper\Core\Models\Attribute;
+use Shopper\Core\Models\AttributeProduct;
+
+final class BuildProductAttributes
+{
+    /**
+     * @return list<array{id: int, name: string, slug: string, type: string, value: string}>
+     */
+    public function handle(Product $product): array
+    {
+        $variantAttributeIds = $this->variantAttributeIds($product);
+
+        $rows = AttributeProduct::query()
+            ->with(['attribute', 'value'])
+            ->where('product_id', $product->id)
+            ->whereHas('attribute', fn ($query) => $query->where('is_enabled', true))
+            ->when(
+                $variantAttributeIds !== [],
+                fn ($query) => $query->whereNotIn('attribute_id', $variantAttributeIds),
+            )
+            ->orderBy('attribute_id')
+            ->get();
+
+        return $rows
+            ->groupBy('attribute_id')
+            ->map(fn (Collection $group): ?array => $this->mapAttributeGroup($group))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function variantAttributeIds(Product $product): array
+    {
+        if (! $product->canUseVariants()) {
+            return [];
+        }
+
+        $product->loadMissing('variants.values');
+
+        return $product->variants
+            ->flatMap(fn ($variant) => $variant->values->pluck('attribute_id'))
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  Collection<int, AttributeProduct>  $group
+     * @return array{id: int, name: string, slug: string, type: string, value: string}|null
+     */
+    private function mapAttributeGroup(Collection $group): ?array
+    {
+        $first = $group->first();
+        $attribute = $first?->attribute;
+
+        if (! $attribute instanceof Attribute) {
+            return null;
+        }
+
+        $localizer = resolve(LocalizeCatalog::class);
+        $localizer->handle($attribute);
+
+        $value = $this->formatValue($attribute, $group, $localizer);
+
+        if ($value === '') {
+            return null;
+        }
+
+        return [
+            'id' => $attribute->id,
+            'name' => $attribute->name,
+            'slug' => $attribute->slug,
+            'type' => $attribute->type->value,
+            'value' => $value,
+        ];
+    }
+
+    /**
+     * @param  Collection<int, AttributeProduct>  $group
+     */
+    private function formatValue(Attribute $attribute, Collection $group, LocalizeCatalog $localizer): string
+    {
+        $values = $group
+            ->map(function (AttributeProduct $row) use ($localizer): ?string {
+                $localizer->handle($row);
+
+                if ($row->value !== null) {
+                    $localizer->handle($row->value);
+                }
+
+                return $row->attribute_custom_value ?? $row->value?->value;
+            })
+            ->filter(fn (?string $value): bool => filled($value))
+            ->unique()
+            ->values();
+
+        if ($values->isEmpty()) {
+            return '';
+        }
+
+        $joined = $values->implode(', ');
+
+        if ($attribute->type === FieldType::RichText) {
+            return str($joined)->sanitizeHtml()->toString();
+        }
+
+        return $joined;
+    }
+}

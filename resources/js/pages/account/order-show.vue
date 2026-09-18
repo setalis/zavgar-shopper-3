@@ -1,0 +1,305 @@
+<script setup lang="ts">
+import { Head, Link } from '@inertiajs/vue3';
+import OrderStatusBadge from '@/components/account/order-status-badge.vue';
+import Card from '@/components/shop/card.vue';
+import { useLocalizedRoute } from '@/composables/useLocalizedRoute';
+import { useTrans } from '@/composables/useTrans';
+import { formatMoney } from '@/lib/format';
+import { dashboard } from '@/routes';
+import { orders as accountOrders } from '@/routes/account';
+import * as shop from '@/routes/shop';
+
+type OrderShipping = {
+    price?: number | null;
+    carrier?: { name?: string | null } | null;
+};
+
+type OrderItem = {
+    id: number;
+    name: string;
+    sku: string | null;
+    quantity: number;
+    unit_price_amount: number;
+    product?: {
+        slug?: string;
+        thumbnail?: string | null;
+        images?: Array<{ url: string }>;
+    } | null;
+};
+
+type Address = {
+    full_name?: string | null;
+    first_name?: string | null;
+    last_name?: string | null;
+    street_address?: string | null;
+    street_address_plus?: string | null;
+    city: string;
+    postal_code: string;
+    country?: { name?: string } | null;
+    country_name?: string | null;
+};
+
+type Order = {
+    id: number;
+    number: string;
+    created_at: string;
+    status: string;
+    payment_status: string;
+    shipping_status: string;
+    price_amount: number;
+    tax_amount: number | null;
+    currency_code: string;
+    items: OrderItem[];
+    shipping_address: Address | null;
+    shipping_option?: OrderShipping | null;
+};
+
+const props = defineProps<{ order: Order }>();
+
+const { t } = useTrans();
+const { localized } = useLocalizedRoute();
+
+const shippingPrice = props.order.shipping_option?.price ?? 0;
+const itemsTotal =
+    props.order.price_amount - (props.order.tax_amount ?? 0) - shippingPrice;
+
+function thumbnail(item: OrderItem): string | null {
+    return item.product?.thumbnail ?? item.product?.images?.[0]?.url ?? null;
+}
+
+function formatDate(value: string): string {
+    return new Date(value).toLocaleDateString('en-US', {
+        month: 'short',
+        day: '2-digit',
+        year: 'numeric',
+    });
+}
+</script>
+
+<template>
+    <Head
+        :title="
+            t('account.order_show.title', {
+                number: order.number,
+            })
+        "
+    />
+
+    <nav class="flex items-center gap-2 text-sm text-ink-mute">
+        <Link :href="localized(dashboard.url())" class="hover:text-ink">{{
+            t('account.order_show.breadcrumb.account')
+        }}</Link>
+        <span>/</span>
+        <Link :href="localized(accountOrders.url())" class="hover:text-ink">{{
+            t('account.order_show.breadcrumb.orders')
+        }}</Link>
+        <span>/</span>
+        <span class="text-ink">{{
+            t('account.order_show.breadcrumb.details')
+        }}</span>
+    </nav>
+
+    <div class="mt-6">
+        <h1 class="font-heading text-2xl font-bold text-ink">
+            {{ t('account.order_show.heading') }}
+        </h1>
+        <p class="mt-1 text-sm text-ink-mute">
+            {{
+                t('account.order_show.ordered_on', {
+                    date: formatDate(order.created_at),
+                })
+            }}
+            <span class="mx-2">|</span>
+            {{
+                t('account.order_show.order_number', {
+                    number: order.number,
+                })
+            }}
+        </p>
+    </div>
+
+    <div class="mt-6 flex flex-wrap gap-2">
+        <template v-if="order.status === 'cancelled'">
+            <OrderStatusBadge :status="order.status" type="order" />
+        </template>
+        <template v-else>
+            <OrderStatusBadge :status="order.payment_status" type="payment" />
+            <OrderStatusBadge :status="order.shipping_status" type="shipping" />
+        </template>
+    </div>
+
+    <div class="mt-8 grid gap-6 lg:grid-cols-3">
+        <div v-if="order.shipping_address">
+            <Card>
+                <h3 class="font-heading text-sm font-semibold text-ink">
+                    {{ t('account.order_show.shipping_address') }}
+                </h3>
+                <address class="mt-3 text-sm text-ink-mute not-italic">
+                    <p class="font-medium text-ink">
+                        {{
+                            order.shipping_address.full_name ??
+                            `${order.shipping_address.first_name ?? ''} ${order.shipping_address.last_name ?? ''}`.trim()
+                        }}
+                    </p>
+                    <p>{{ order.shipping_address.street_address }}</p>
+                    <p v-if="order.shipping_address.street_address_plus">
+                        {{ order.shipping_address.street_address_plus }}
+                    </p>
+                    <p>
+                        {{ order.shipping_address.city }}
+                        {{ order.shipping_address.postal_code }}
+                    </p>
+                    <p
+                        v-if="
+                            order.shipping_address.country?.name ||
+                            order.shipping_address.country_name
+                        "
+                    >
+                        {{
+                            order.shipping_address.country?.name ??
+                            order.shipping_address.country_name
+                        }}
+                    </p>
+                </address>
+            </Card>
+        </div>
+
+        <div class="lg:col-span-2">
+            <Card>
+                <h3 class="font-heading text-sm font-semibold text-ink">
+                    {{ t('account.order_show.summary.heading') }}
+                </h3>
+                <dl class="mt-3 space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <dt class="text-ink-mute">
+                            {{ t('account.order_show.summary.items') }}
+                        </dt>
+                        <dd class="text-ink">
+                            {{ formatMoney(itemsTotal, order.currency_code) }}
+                        </dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-ink-mute">
+                            {{ t('account.order_show.summary.delivery') }}
+                            <span
+                                v-if="order.shipping_option?.carrier?.name"
+                                class="text-ink-faint"
+                                >({{
+                                    order.shipping_option.carrier.name
+                                }})</span
+                            >
+                        </dt>
+                        <dd class="text-ink">
+                            {{
+                                shippingPrice > 0
+                                    ? formatMoney(
+                                          shippingPrice,
+                                          order.currency_code,
+                                      )
+                                    : t('account.order_show.summary.free')
+                            }}
+                        </dd>
+                    </div>
+                    <div
+                        v-if="(order.tax_amount ?? 0) > 0"
+                        class="flex justify-between"
+                    >
+                        <dt class="text-ink-mute">
+                            {{ t('account.order_show.summary.tax') }}
+                        </dt>
+                        <dd class="text-ink">
+                            {{
+                                formatMoney(
+                                    order.tax_amount!,
+                                    order.currency_code,
+                                )
+                            }}
+                        </dd>
+                    </div>
+                    <div class="flex justify-between border-t border-rule pt-2">
+                        <dt class="font-semibold text-ink">
+                            {{ t('account.order_show.summary.total') }}
+                        </dt>
+                        <dd class="font-semibold text-ink">
+                            {{
+                                formatMoney(
+                                    order.price_amount,
+                                    order.currency_code,
+                                )
+                            }}
+                        </dd>
+                    </div>
+                </dl>
+            </Card>
+        </div>
+    </div>
+
+    <div class="mt-8 overflow-hidden">
+        <Card class="!p-0">
+            <div class="divide-y divide-rule">
+                <div
+                    v-for="item in order.items"
+                    :key="item.id"
+                    class="flex gap-4 px-5 py-4"
+                >
+                    <div
+                        class="size-24 shrink-0 overflow-hidden rounded-lg bg-muted ring-1 ring-rule"
+                    >
+                        <img
+                            v-if="thumbnail(item)"
+                            :src="thumbnail(item)!"
+                            :alt="item.name"
+                            loading="lazy"
+                            class="size-full object-cover object-center"
+                        />
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <Link
+                            v-if="item.product?.slug"
+                            :href="
+                                localized(
+                                    shop.product.url({ product: item.product.slug }),
+                                )
+                            "
+                            class="line-clamp-2 font-heading text-sm font-medium text-ink hover:underline"
+                        >
+                            {{ item.name }}
+                        </Link>
+                        <p
+                            v-else
+                            class="line-clamp-2 font-heading text-sm font-medium text-ink"
+                        >
+                            {{ item.name }}
+                        </p>
+                        <p v-if="item.sku" class="mt-0.5 text-xs text-ink-mute">
+                            {{
+                                t('account.order_show.sku', {
+                                    sku: item.sku,
+                                })
+                            }}
+                        </p>
+                        <p class="mt-1 text-sm text-ink-mute">
+                            {{
+                                t('account.order_show.quantity_price', {
+                                    quantity: item.quantity,
+                                    price: formatMoney(
+                                        item.unit_price_amount,
+                                        order.currency_code,
+                                    ),
+                                })
+                            }}
+                        </p>
+                    </div>
+                    <p class="shrink-0 text-sm font-medium text-ink">
+                        {{
+                            formatMoney(
+                                item.unit_price_amount * item.quantity,
+                                order.currency_code,
+                            )
+                        }}
+                    </p>
+                </div>
+            </div>
+        </Card>
+    </div>
+</template>
