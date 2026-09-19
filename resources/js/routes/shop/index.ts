@@ -1,5 +1,6 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../wayfinder'
 import productD87513 from './product'
+import newsB3a6f8 from './news'
 import searchD2f59a from './search'
 import contact50a660 from './contact'
 import cartB8cf73 from './cart'
@@ -649,6 +650,84 @@ brand.head = (args: { brand: string | { slug: string } } | [brand: string | { sl
     
     brand.form = brandForm
 /**
+* @see \App\Http\Controllers\Shop\NewsController::news
+ * @see app/Http/Controllers/Shop/NewsController.php:15
+ * @route '/news'
+ */
+export const news = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: news.url(options),
+    method: 'get',
+})
+
+news.definition = {
+    methods: ["get","head"],
+    url: '/news',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\Shop\NewsController::news
+ * @see app/Http/Controllers/Shop/NewsController.php:15
+ * @route '/news'
+ */
+news.url = (options?: RouteQueryOptions) => {
+    return news.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Shop\NewsController::news
+ * @see app/Http/Controllers/Shop/NewsController.php:15
+ * @route '/news'
+ */
+news.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: news.url(options),
+    method: 'get',
+})
+/**
+* @see \App\Http\Controllers\Shop\NewsController::news
+ * @see app/Http/Controllers/Shop/NewsController.php:15
+ * @route '/news'
+ */
+news.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: news.url(options),
+    method: 'head',
+})
+
+    /**
+* @see \App\Http\Controllers\Shop\NewsController::news
+ * @see app/Http/Controllers/Shop/NewsController.php:15
+ * @route '/news'
+ */
+    const newsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+        action: news.url(options),
+        method: 'get',
+    })
+
+            /**
+* @see \App\Http\Controllers\Shop\NewsController::news
+ * @see app/Http/Controllers/Shop/NewsController.php:15
+ * @route '/news'
+ */
+        newsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+            action: news.url(options),
+            method: 'get',
+        })
+            /**
+* @see \App\Http\Controllers\Shop\NewsController::news
+ * @see app/Http/Controllers/Shop/NewsController.php:15
+ * @route '/news'
+ */
+        newsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+            action: news.url({
+                        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+                            _method: 'HEAD',
+                            ...(options?.query ?? options?.mergeQuery ?? {}),
+                        }
+                    }),
+            method: 'get',
+        })
+    
+    news.form = newsForm
+/**
 * @see \App\Http\Controllers\Shop\SearchController::__invoke
  * @see app/Http/Controllers/Shop/SearchController.php:17
  * @route '/search'
@@ -968,6 +1047,7 @@ category: Object.assign(category, category),
 collection: Object.assign(collection, collection),
 brands: Object.assign(brands, brands),
 brand: Object.assign(brand, brand),
+news: Object.assign(news, newsB3a6f8),
 search: Object.assign(search, searchD2f59a),
 contact: Object.assign(contact, contact50a660),
 cart: Object.assign(cart, cartB8cf73),

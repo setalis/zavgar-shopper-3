@@ -4,6 +4,7 @@ import ProductReviewController from './ProductReviewController'
 import CategoryController from './CategoryController'
 import CollectionController from './CollectionController'
 import BrandController from './BrandController'
+import NewsController from './NewsController'
 import SearchController from './SearchController'
 import SearchSuggestController from './SearchSuggestController'
 import ContactController from './ContactController'
@@ -20,6 +21,7 @@ ProductReviewController: Object.assign(ProductReviewController, ProductReviewCon
 CategoryController: Object.assign(CategoryController, CategoryController),
 CollectionController: Object.assign(CollectionController, CollectionController),
 BrandController: Object.assign(BrandController, BrandController),
+NewsController: Object.assign(NewsController, NewsController),
 SearchController: Object.assign(SearchController, SearchController),
 SearchSuggestController: Object.assign(SearchSuggestController, SearchSuggestController),
 ContactController: Object.assign(ContactController, ContactController),

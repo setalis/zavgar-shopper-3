@@ -15,6 +15,7 @@ import reviews from './reviews'
 import banners from './banners'
 import promoBanners from './promo-banners'
 import menu from './menu'
+import news from './news'
 /**
 * @see \Livewire\Mechanisms\HandleRouting\LivewirePageController::__invoke
  * @see vendor/livewire/livewire/src/Mechanisms/HandleRouting/LivewirePageController.php:7
@@ -648,6 +649,7 @@ reviews: Object.assign(reviews, reviews),
 banners: Object.assign(banners, banners),
 promoBanners: Object.assign(promoBanners, promoBanners),
 menu: Object.assign(menu, menu),
+news: Object.assign(news, news),
 }
 
 export default shopper

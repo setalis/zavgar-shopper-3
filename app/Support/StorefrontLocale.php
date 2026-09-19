@@ -156,6 +156,7 @@ final class StorefrontLocale
             'categories',
             'collections',
             'brands',
+            'news',
             'search',
             'contact',
             'cart',

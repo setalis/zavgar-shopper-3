@@ -6,6 +6,7 @@ namespace App\Sidebar;
 
 use App\Enums\HomepageBannerPermission;
 use App\Enums\MenuItemPermission;
+use App\Enums\NewsPermission;
 use Shopper\Sidebar\AbstractAdminSidebar;
 use Shopper\Sidebar\Contracts\Builder\Group;
 use Shopper\Sidebar\Contracts\Builder\Item;
@@ -43,6 +44,14 @@ final class HomepageBannersSidebar extends AbstractAdminSidebar
                 $item->route('shopper.menu.index');
                 $item->setIcon('phosphor-list');
             });
+
+            $group->item(__('backend.news.menu'), function (Item $item): void {
+                $item->weight(4);
+                $item->setAuthorized($this->canBrowseNews());
+                $item->useSpa();
+                $item->route('shopper.news.index');
+                $item->setIcon('phosphor-newspaper');
+            });
         });
 
         return $menu;
@@ -56,6 +65,11 @@ final class HomepageBannersSidebar extends AbstractAdminSidebar
     private function canBrowseMenuItems(): bool
     {
         return $this->hasPermissionName(MenuItemPermission::Browse->value);
+    }
+
+    private function canBrowseNews(): bool
+    {
+        return $this->hasPermissionName(NewsPermission::Browse->value);
     }
 
     private function hasPermissionName(string $name): bool

@@ -59,6 +59,10 @@ const resourceLinks = computed(() => [
         href: localized(shop.brands.url()),
         label: t('shop.footer.resources.brands'),
     },
+    {
+        href: localized(shop.news.url()),
+        label: t('shop.footer.resources.news'),
+    },
     { href: localized(shop.search.url()), label: t('shop.footer.resources.search') },
     { href: localized(shop.cart.url()), label: t('shop.footer.resources.cart') },
 ]);

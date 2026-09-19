@@ -13,6 +13,7 @@ use App\Http\Controllers\Shop\CheckoutSuccessController;
 use App\Http\Controllers\Shop\CollectionController;
 use App\Http\Controllers\Shop\ContactController;
 use App\Http\Controllers\Shop\HomeController;
+use App\Http\Controllers\Shop\NewsController;
 use App\Http\Controllers\Shop\ProductController;
 use App\Http\Controllers\Shop\ProductReviewController;
 use App\Http\Controllers\Shop\SearchController;
@@ -40,6 +41,8 @@ $storefront = function (): void {
     Route::get('collections/{collection:slug}', [CollectionController::class, 'show'])->name('shop.collection');
     Route::get('brands', [BrandController::class, 'index'])->name('shop.brands');
     Route::get('brands/{brand:slug}', [BrandController::class, 'show'])->name('shop.brand');
+    Route::get('news', [NewsController::class, 'index'])->name('shop.news');
+    Route::get('news/{article:slug}', [NewsController::class, 'show'])->name('shop.news.show');
     Route::get('search', SearchController::class)->middleware('throttle:30,1')->name('shop.search');
     Route::get('search/suggest', SearchSuggestController::class)->middleware('throttle:30,1')->name('shop.search.suggest');
     Route::get('contact', [ContactController::class, 'index'])->name('shop.contact');

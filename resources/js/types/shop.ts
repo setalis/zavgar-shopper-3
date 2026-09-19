@@ -44,6 +44,17 @@ export type HomepageBannerTint = {
     to: string;
 };
 
+export type NewsArticle = WithStorefrontMedia & {
+    id: number;
+    title: string;
+    slug: string;
+    summary: string | null;
+    description: string | null;
+    seo_title: string | null;
+    seo_description: string | null;
+    published_at: string | null;
+};
+
 export type HomepageBanner = {
     id: number;
     size: 'large' | 'medium' | 'small';
