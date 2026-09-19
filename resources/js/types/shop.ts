@@ -166,6 +166,7 @@ export type CartContext = {
     subtotal: number;
     discountTotal: number;
     taxTotal: number;
+    shippingTotal: number;
     total: number;
     taxInclusive: boolean;
     lineSubtotals: Record<number, number>;

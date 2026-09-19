@@ -148,12 +148,7 @@ watch(
     },
 );
 
-const total = computed<number>(() => {
-    const sub = props.cartContext?.total ?? 0;
-    const delivery = selectedDelivery.value?.amount ?? 0;
-
-    return sub + delivery;
-});
+const total = computed<number>(() => props.cartContext?.total ?? 0);
 
 const crumbs = computed(() => [
     { label: t('shop.nav.home'), href: localized(home.url()) },

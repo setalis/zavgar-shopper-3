@@ -82,7 +82,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
  * @see app/Http/Controllers/Shop/CategoryController.php:34
  * @route '/categories/{category}'
  */
-export const show = (args: { category: string | number | { slug: string | number } } | [category: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const show = (args: { category: string | { slug: string } } | [category: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -97,7 +97,7 @@ show.definition = {
  * @see app/Http/Controllers/Shop/CategoryController.php:34
  * @route '/categories/{category}'
  */
-show.url = (args: { category: string | number | { slug: string | number } } | [category: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions) => {
+show.url = (args: { category: string | { slug: string } } | [category: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { category: args }
     }
@@ -130,7 +130,7 @@ show.url = (args: { category: string | number | { slug: string | number } } | [c
  * @see app/Http/Controllers/Shop/CategoryController.php:34
  * @route '/categories/{category}'
  */
-show.get = (args: { category: string | number | { slug: string | number } } | [category: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+show.get = (args: { category: string | { slug: string } } | [category: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -139,7 +139,7 @@ show.get = (args: { category: string | number | { slug: string | number } } | [c
  * @see app/Http/Controllers/Shop/CategoryController.php:34
  * @route '/categories/{category}'
  */
-show.head = (args: { category: string | number | { slug: string | number } } | [category: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+show.head = (args: { category: string | { slug: string } } | [category: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: show.url(args, options),
     method: 'head',
 })
@@ -149,7 +149,7 @@ show.head = (args: { category: string | number | { slug: string | number } } | [
  * @see app/Http/Controllers/Shop/CategoryController.php:34
  * @route '/categories/{category}'
  */
-    const showForm = (args: { category: string | number | { slug: string | number } } | [category: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    const showForm = (args: { category: string | { slug: string } } | [category: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
         action: show.url(args, options),
         method: 'get',
     })
@@ -159,7 +159,7 @@ show.head = (args: { category: string | number | { slug: string | number } } | [
  * @see app/Http/Controllers/Shop/CategoryController.php:34
  * @route '/categories/{category}'
  */
-        showForm.get = (args: { category: string | number | { slug: string | number } } | [category: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+        showForm.get = (args: { category: string | { slug: string } } | [category: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
             action: show.url(args, options),
             method: 'get',
         })
@@ -168,7 +168,7 @@ show.head = (args: { category: string | number | { slug: string | number } } | [
  * @see app/Http/Controllers/Shop/CategoryController.php:34
  * @route '/categories/{category}'
  */
-        showForm.head = (args: { category: string | number | { slug: string | number } } | [category: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+        showForm.head = (args: { category: string | { slug: string } } | [category: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
             action: show.url(args, {
                         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
                             _method: 'HEAD',

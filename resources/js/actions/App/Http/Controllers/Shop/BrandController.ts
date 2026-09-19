@@ -82,7 +82,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
  * @see app/Http/Controllers/Shop/BrandController.php:66
  * @route '/brands/{brand}'
  */
-export const show = (args: { brand: string | number | { slug: string | number } } | [brand: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const show = (args: { brand: string | { slug: string } } | [brand: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -97,7 +97,7 @@ show.definition = {
  * @see app/Http/Controllers/Shop/BrandController.php:66
  * @route '/brands/{brand}'
  */
-show.url = (args: { brand: string | number | { slug: string | number } } | [brand: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions) => {
+show.url = (args: { brand: string | { slug: string } } | [brand: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { brand: args }
     }
@@ -130,7 +130,7 @@ show.url = (args: { brand: string | number | { slug: string | number } } | [bran
  * @see app/Http/Controllers/Shop/BrandController.php:66
  * @route '/brands/{brand}'
  */
-show.get = (args: { brand: string | number | { slug: string | number } } | [brand: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+show.get = (args: { brand: string | { slug: string } } | [brand: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -139,7 +139,7 @@ show.get = (args: { brand: string | number | { slug: string | number } } | [bran
  * @see app/Http/Controllers/Shop/BrandController.php:66
  * @route '/brands/{brand}'
  */
-show.head = (args: { brand: string | number | { slug: string | number } } | [brand: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+show.head = (args: { brand: string | { slug: string } } | [brand: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: show.url(args, options),
     method: 'head',
 })
@@ -149,7 +149,7 @@ show.head = (args: { brand: string | number | { slug: string | number } } | [bra
  * @see app/Http/Controllers/Shop/BrandController.php:66
  * @route '/brands/{brand}'
  */
-    const showForm = (args: { brand: string | number | { slug: string | number } } | [brand: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    const showForm = (args: { brand: string | { slug: string } } | [brand: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
         action: show.url(args, options),
         method: 'get',
     })
@@ -159,7 +159,7 @@ show.head = (args: { brand: string | number | { slug: string | number } } | [bra
  * @see app/Http/Controllers/Shop/BrandController.php:66
  * @route '/brands/{brand}'
  */
-        showForm.get = (args: { brand: string | number | { slug: string | number } } | [brand: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+        showForm.get = (args: { brand: string | { slug: string } } | [brand: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
             action: show.url(args, options),
             method: 'get',
         })
@@ -168,7 +168,7 @@ show.head = (args: { brand: string | number | { slug: string | number } } | [bra
  * @see app/Http/Controllers/Shop/BrandController.php:66
  * @route '/brands/{brand}'
  */
-        showForm.head = (args: { brand: string | number | { slug: string | number } } | [brand: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+        showForm.head = (args: { brand: string | { slug: string } } | [brand: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
             action: show.url(args, {
                         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
                             _method: 'HEAD',

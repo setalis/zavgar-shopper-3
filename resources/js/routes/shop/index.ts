@@ -89,7 +89,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
  * @see app/Http/Controllers/Shop/ProductController.php:98
  * @route '/shop/{product}'
  */
-export const product = (args: { product: string | number | { slug: string | number } } | [product: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const product = (args: { product: string | { slug: string } } | [product: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: product.url(args, options),
     method: 'get',
 })
@@ -104,7 +104,7 @@ product.definition = {
  * @see app/Http/Controllers/Shop/ProductController.php:98
  * @route '/shop/{product}'
  */
-product.url = (args: { product: string | number | { slug: string | number } } | [product: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions) => {
+product.url = (args: { product: string | { slug: string } } | [product: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { product: args }
     }
@@ -137,7 +137,7 @@ product.url = (args: { product: string | number | { slug: string | number } } | 
  * @see app/Http/Controllers/Shop/ProductController.php:98
  * @route '/shop/{product}'
  */
-product.get = (args: { product: string | number | { slug: string | number } } | [product: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+product.get = (args: { product: string | { slug: string } } | [product: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: product.url(args, options),
     method: 'get',
 })
@@ -146,7 +146,7 @@ product.get = (args: { product: string | number | { slug: string | number } } | 
  * @see app/Http/Controllers/Shop/ProductController.php:98
  * @route '/shop/{product}'
  */
-product.head = (args: { product: string | number | { slug: string | number } } | [product: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+product.head = (args: { product: string | { slug: string } } | [product: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: product.url(args, options),
     method: 'head',
 })
@@ -156,7 +156,7 @@ product.head = (args: { product: string | number | { slug: string | number } } |
  * @see app/Http/Controllers/Shop/ProductController.php:98
  * @route '/shop/{product}'
  */
-    const productForm = (args: { product: string | number | { slug: string | number } } | [product: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    const productForm = (args: { product: string | { slug: string } } | [product: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
         action: product.url(args, options),
         method: 'get',
     })
@@ -166,7 +166,7 @@ product.head = (args: { product: string | number | { slug: string | number } } |
  * @see app/Http/Controllers/Shop/ProductController.php:98
  * @route '/shop/{product}'
  */
-        productForm.get = (args: { product: string | number | { slug: string | number } } | [product: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+        productForm.get = (args: { product: string | { slug: string } } | [product: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
             action: product.url(args, options),
             method: 'get',
         })
@@ -175,7 +175,7 @@ product.head = (args: { product: string | number | { slug: string | number } } |
  * @see app/Http/Controllers/Shop/ProductController.php:98
  * @route '/shop/{product}'
  */
-        productForm.head = (args: { product: string | number | { slug: string | number } } | [product: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+        productForm.head = (args: { product: string | { slug: string } } | [product: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
             action: product.url(args, {
                         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
                             _method: 'HEAD',
@@ -269,7 +269,7 @@ categories.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
  * @see app/Http/Controllers/Shop/CategoryController.php:34
  * @route '/categories/{category}'
  */
-export const category = (args: { category: string | number | { slug: string | number } } | [category: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const category = (args: { category: string | { slug: string } } | [category: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: category.url(args, options),
     method: 'get',
 })
@@ -284,7 +284,7 @@ category.definition = {
  * @see app/Http/Controllers/Shop/CategoryController.php:34
  * @route '/categories/{category}'
  */
-category.url = (args: { category: string | number | { slug: string | number } } | [category: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions) => {
+category.url = (args: { category: string | { slug: string } } | [category: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { category: args }
     }
@@ -317,7 +317,7 @@ category.url = (args: { category: string | number | { slug: string | number } } 
  * @see app/Http/Controllers/Shop/CategoryController.php:34
  * @route '/categories/{category}'
  */
-category.get = (args: { category: string | number | { slug: string | number } } | [category: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+category.get = (args: { category: string | { slug: string } } | [category: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: category.url(args, options),
     method: 'get',
 })
@@ -326,7 +326,7 @@ category.get = (args: { category: string | number | { slug: string | number } } 
  * @see app/Http/Controllers/Shop/CategoryController.php:34
  * @route '/categories/{category}'
  */
-category.head = (args: { category: string | number | { slug: string | number } } | [category: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+category.head = (args: { category: string | { slug: string } } | [category: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: category.url(args, options),
     method: 'head',
 })
@@ -336,7 +336,7 @@ category.head = (args: { category: string | number | { slug: string | number } }
  * @see app/Http/Controllers/Shop/CategoryController.php:34
  * @route '/categories/{category}'
  */
-    const categoryForm = (args: { category: string | number | { slug: string | number } } | [category: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    const categoryForm = (args: { category: string | { slug: string } } | [category: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
         action: category.url(args, options),
         method: 'get',
     })
@@ -346,7 +346,7 @@ category.head = (args: { category: string | number | { slug: string | number } }
  * @see app/Http/Controllers/Shop/CategoryController.php:34
  * @route '/categories/{category}'
  */
-        categoryForm.get = (args: { category: string | number | { slug: string | number } } | [category: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+        categoryForm.get = (args: { category: string | { slug: string } } | [category: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
             action: category.url(args, options),
             method: 'get',
         })
@@ -355,7 +355,7 @@ category.head = (args: { category: string | number | { slug: string | number } }
  * @see app/Http/Controllers/Shop/CategoryController.php:34
  * @route '/categories/{category}'
  */
-        categoryForm.head = (args: { category: string | number | { slug: string | number } } | [category: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+        categoryForm.head = (args: { category: string | { slug: string } } | [category: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
             action: category.url(args, {
                         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
                             _method: 'HEAD',
@@ -371,7 +371,7 @@ category.head = (args: { category: string | number | { slug: string | number } }
  * @see app/Http/Controllers/Shop/CollectionController.php:17
  * @route '/collections/{collection}'
  */
-export const collection = (args: { collection: string | number | { slug: string | number } } | [collection: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const collection = (args: { collection: string | { slug: string } } | [collection: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: collection.url(args, options),
     method: 'get',
 })
@@ -386,7 +386,7 @@ collection.definition = {
  * @see app/Http/Controllers/Shop/CollectionController.php:17
  * @route '/collections/{collection}'
  */
-collection.url = (args: { collection: string | number | { slug: string | number } } | [collection: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions) => {
+collection.url = (args: { collection: string | { slug: string } } | [collection: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { collection: args }
     }
@@ -419,7 +419,7 @@ collection.url = (args: { collection: string | number | { slug: string | number 
  * @see app/Http/Controllers/Shop/CollectionController.php:17
  * @route '/collections/{collection}'
  */
-collection.get = (args: { collection: string | number | { slug: string | number } } | [collection: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+collection.get = (args: { collection: string | { slug: string } } | [collection: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: collection.url(args, options),
     method: 'get',
 })
@@ -428,7 +428,7 @@ collection.get = (args: { collection: string | number | { slug: string | number 
  * @see app/Http/Controllers/Shop/CollectionController.php:17
  * @route '/collections/{collection}'
  */
-collection.head = (args: { collection: string | number | { slug: string | number } } | [collection: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+collection.head = (args: { collection: string | { slug: string } } | [collection: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: collection.url(args, options),
     method: 'head',
 })
@@ -438,7 +438,7 @@ collection.head = (args: { collection: string | number | { slug: string | number
  * @see app/Http/Controllers/Shop/CollectionController.php:17
  * @route '/collections/{collection}'
  */
-    const collectionForm = (args: { collection: string | number | { slug: string | number } } | [collection: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    const collectionForm = (args: { collection: string | { slug: string } } | [collection: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
         action: collection.url(args, options),
         method: 'get',
     })
@@ -448,7 +448,7 @@ collection.head = (args: { collection: string | number | { slug: string | number
  * @see app/Http/Controllers/Shop/CollectionController.php:17
  * @route '/collections/{collection}'
  */
-        collectionForm.get = (args: { collection: string | number | { slug: string | number } } | [collection: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+        collectionForm.get = (args: { collection: string | { slug: string } } | [collection: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
             action: collection.url(args, options),
             method: 'get',
         })
@@ -457,7 +457,7 @@ collection.head = (args: { collection: string | number | { slug: string | number
  * @see app/Http/Controllers/Shop/CollectionController.php:17
  * @route '/collections/{collection}'
  */
-        collectionForm.head = (args: { collection: string | number | { slug: string | number } } | [collection: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+        collectionForm.head = (args: { collection: string | { slug: string } } | [collection: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
             action: collection.url(args, {
                         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
                             _method: 'HEAD',
@@ -551,7 +551,7 @@ brands.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
  * @see app/Http/Controllers/Shop/BrandController.php:66
  * @route '/brands/{brand}'
  */
-export const brand = (args: { brand: string | number | { slug: string | number } } | [brand: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const brand = (args: { brand: string | { slug: string } } | [brand: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: brand.url(args, options),
     method: 'get',
 })
@@ -566,7 +566,7 @@ brand.definition = {
  * @see app/Http/Controllers/Shop/BrandController.php:66
  * @route '/brands/{brand}'
  */
-brand.url = (args: { brand: string | number | { slug: string | number } } | [brand: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions) => {
+brand.url = (args: { brand: string | { slug: string } } | [brand: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { brand: args }
     }
@@ -599,7 +599,7 @@ brand.url = (args: { brand: string | number | { slug: string | number } } | [bra
  * @see app/Http/Controllers/Shop/BrandController.php:66
  * @route '/brands/{brand}'
  */
-brand.get = (args: { brand: string | number | { slug: string | number } } | [brand: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+brand.get = (args: { brand: string | { slug: string } } | [brand: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: brand.url(args, options),
     method: 'get',
 })
@@ -608,7 +608,7 @@ brand.get = (args: { brand: string | number | { slug: string | number } } | [bra
  * @see app/Http/Controllers/Shop/BrandController.php:66
  * @route '/brands/{brand}'
  */
-brand.head = (args: { brand: string | number | { slug: string | number } } | [brand: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+brand.head = (args: { brand: string | { slug: string } } | [brand: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: brand.url(args, options),
     method: 'head',
 })
@@ -618,7 +618,7 @@ brand.head = (args: { brand: string | number | { slug: string | number } } | [br
  * @see app/Http/Controllers/Shop/BrandController.php:66
  * @route '/brands/{brand}'
  */
-    const brandForm = (args: { brand: string | number | { slug: string | number } } | [brand: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    const brandForm = (args: { brand: string | { slug: string } } | [brand: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
         action: brand.url(args, options),
         method: 'get',
     })
@@ -628,7 +628,7 @@ brand.head = (args: { brand: string | number | { slug: string | number } } | [br
  * @see app/Http/Controllers/Shop/BrandController.php:66
  * @route '/brands/{brand}'
  */
-        brandForm.get = (args: { brand: string | number | { slug: string | number } } | [brand: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+        brandForm.get = (args: { brand: string | { slug: string } } | [brand: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
             action: brand.url(args, options),
             method: 'get',
         })
@@ -637,7 +637,7 @@ brand.head = (args: { brand: string | number | { slug: string | number } } | [br
  * @see app/Http/Controllers/Shop/BrandController.php:66
  * @route '/brands/{brand}'
  */
-        brandForm.head = (args: { brand: string | number | { slug: string | number } } | [brand: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+        brandForm.head = (args: { brand: string | { slug: string } } | [brand: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
             action: brand.url(args, {
                         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
                             _method: 'HEAD',

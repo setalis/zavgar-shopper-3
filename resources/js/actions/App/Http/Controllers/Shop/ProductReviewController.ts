@@ -4,7 +4,7 @@ import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFo
  * @see app/Http/Controllers/Shop/ProductReviewController.php:16
  * @route '/shop/{product}/reviews'
  */
-export const store = (args: { product: string | number | { slug: string | number } } | [product: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const store = (args: { product: string | { slug: string } } | [product: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(args, options),
     method: 'post',
 })
@@ -19,7 +19,7 @@ store.definition = {
  * @see app/Http/Controllers/Shop/ProductReviewController.php:16
  * @route '/shop/{product}/reviews'
  */
-store.url = (args: { product: string | number | { slug: string | number } } | [product: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions) => {
+store.url = (args: { product: string | { slug: string } } | [product: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { product: args }
     }
@@ -52,7 +52,7 @@ store.url = (args: { product: string | number | { slug: string | number } } | [p
  * @see app/Http/Controllers/Shop/ProductReviewController.php:16
  * @route '/shop/{product}/reviews'
  */
-store.post = (args: { product: string | number | { slug: string | number } } | [product: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+store.post = (args: { product: string | { slug: string } } | [product: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(args, options),
     method: 'post',
 })
@@ -62,7 +62,7 @@ store.post = (args: { product: string | number | { slug: string | number } } | [
  * @see app/Http/Controllers/Shop/ProductReviewController.php:16
  * @route '/shop/{product}/reviews'
  */
-    const storeForm = (args: { product: string | number | { slug: string | number } } | [product: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    const storeForm = (args: { product: string | { slug: string } } | [product: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
         action: store.url(args, options),
         method: 'post',
     })
@@ -72,7 +72,7 @@ store.post = (args: { product: string | number | { slug: string | number } } | [
  * @see app/Http/Controllers/Shop/ProductReviewController.php:16
  * @route '/shop/{product}/reviews'
  */
-        storeForm.post = (args: { product: string | number | { slug: string | number } } | [product: string | number | { slug: string | number } ] | string | number | { slug: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+        storeForm.post = (args: { product: string | { slug: string } } | [product: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
             action: store.url(args, options),
             method: 'post',
         })

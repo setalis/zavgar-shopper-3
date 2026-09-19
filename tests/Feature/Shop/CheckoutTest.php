@@ -168,3 +168,104 @@ test('authenticated customers can place a cash-on-delivery order', function (): 
 
     expect(resolve(CartGateway::class)->current())->toBeNull();
 });
+
+test('checkout total includes the selected delivery amount once', function (): void {
+    $user = User::factory()->create();
+    $product = Product::factory()->standard()->create([
+        'name' => 'Studio Camera',
+        'slug' => 'studio-camera',
+        'allow_backorder' => true,
+    ]);
+
+    Price::query()->create([
+        'priceable_type' => 'product',
+        'priceable_id' => $product->id,
+        'amount' => 45000,
+        'compare_amount' => null,
+        'cost_amount' => null,
+        'currency_id' => $this->currency->id,
+    ]);
+
+    $inventory = Inventory::factory()->create([
+        'is_default' => true,
+        'code' => 'checkout-totals-wh',
+    ]);
+
+    $product->mutateStock($inventory->id, 5);
+
+    $zone = Zone::factory()->create([
+        'name' => 'Ukraine',
+        'currency_id' => $this->currency->id,
+        'is_enabled' => true,
+    ]);
+
+    $country = Country::factory()->create([
+        'name' => 'Ukraine',
+        'cca2' => 'UA',
+        'cca3' => 'UKR',
+    ]);
+
+    $zone->countries()->attach($country->id);
+
+    $paymentMethod = PaymentMethod::factory()->create([
+        'title' => 'Cash on delivery',
+        'slug' => 'cod-totals',
+        'driver' => 'manual',
+        'is_enabled' => true,
+    ]);
+
+    $zone->paymentMethods()->attach($paymentMethod->id);
+
+    $carrier = Carrier::factory()->create([
+        'name' => 'Manual Post',
+        'slug' => 'manual-post-totals',
+        'is_enabled' => true,
+        'driver' => null,
+    ]);
+
+    $zone->carriers()->attach($carrier->id);
+
+    $shippingOption = CarrierOption::factory()->create([
+        'name' => 'Standard delivery',
+        'price' => 10000,
+        'carrier_id' => $carrier->id,
+        'zone_id' => $zone->id,
+        'is_enabled' => true,
+    ]);
+
+    GetCountriesByZone::flush();
+    Cache::forget("zone.country.{$country->id}");
+
+    $this->actingAs($user);
+    ZoneSessionManager::setSessionForCountryCode($country->cca2);
+
+    $this->post(route('shop.cart.add'), [
+        'product_id' => $product->id,
+        'quantity' => 1,
+    ])->assertRedirect();
+
+    $this->post(route('shop.checkout.shipping-address'), [
+        'first_name' => 'Olena',
+        'last_name' => 'Koval',
+        'street_address' => 'Khreshchatyk 1',
+        'street_address_plus' => null,
+        'postal_code' => '01001',
+        'city' => 'Kyiv',
+        'state' => null,
+        'phone_number' => '0955807707',
+    ])->assertRedirect(route('shop.checkout.index'));
+
+    $this->post(route('shop.checkout.shipping-option'), [
+        'service_code' => $shippingOption->public_id ?? $shippingOption->id,
+    ])->assertRedirect(route('shop.checkout.index'));
+
+    $this->get(route('shop.checkout.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('shop/checkout')
+            ->where('cartContext.subtotal', 45000)
+            ->where('cartContext.shippingTotal', 10000)
+            ->where('cartContext.taxTotal', 0)
+            ->where('cartContext.total', 55000)
+        );
+});
