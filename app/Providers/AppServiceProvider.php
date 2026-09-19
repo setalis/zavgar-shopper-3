@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Import\Sources\NormalizedCsvSource;
 use App\Import\Sources\XlsxSource;
 use App\Listeners\DrainQueueAfterResponse;
 use App\Listeners\MergeGuestWishlist;
@@ -45,7 +46,12 @@ class AppServiceProvider extends ServiceProvider
 
     protected function registerProductExcelImport(): void
     {
-        $this->app->make(ImportManager::class)->extend(
+        $manager = $this->app->make(ImportManager::class);
+        $manager->extend(
+            'csv',
+            fn (Container $app): NormalizedCsvSource => $app->make(NormalizedCsvSource::class),
+        );
+        $manager->extend(
             'xlsx',
             fn (Container $app): XlsxSource => $app->make(XlsxSource::class),
         );

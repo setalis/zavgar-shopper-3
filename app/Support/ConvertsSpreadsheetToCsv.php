@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use App\Import\PreparesImportRecords;
 use DateInterval;
 use DateTimeInterface;
 use League\Csv\Writer;
+use OpenSpout\Common\Entity\Cell;
+use OpenSpout\Common\Entity\Cell\FormulaCell;
+use OpenSpout\Common\Entity\Row;
 use OpenSpout\Common\Exception\OpenSpoutException;
 use OpenSpout\Reader\XLSX\Reader;
 use RuntimeException;
@@ -17,7 +21,10 @@ final class ConvertsSpreadsheetToCsv
 {
     private ?string $embeddedDelimiter = null;
 
-    public function __construct(private DetectsCsvDelimiter $delimiterDetector) {}
+    public function __construct(
+        private DetectsCsvDelimiter $delimiterDetector,
+        private PreparesImportRecords $prepares,
+    ) {}
 
     public function supports(string $filename, ?string $mime = null): bool
     {
@@ -115,12 +122,18 @@ final class ConvertsSpreadsheetToCsv
 
         try {
             foreach ($reader->getSheetIterator() as $sheet) {
+                $rows = [];
+
                 foreach ($sheet->getRowIterator() as $row) {
                     if ($row->isEmpty()) {
                         continue;
                     }
 
-                    $writer->insertOne($this->cellsForCsv($row->toArray()));
+                    $rows[] = $this->cellsForCsv($row);
+                }
+
+                foreach ($this->prepares->handle($rows) as $cells) {
+                    $writer->insertOne($cells);
                 }
 
                 break;
@@ -139,11 +152,17 @@ final class ConvertsSpreadsheetToCsv
     }
 
     /**
-     * @param  list<null|bool|DateInterval|DateTimeInterface|float|int|string>  $values
      * @return list<string>
      */
-    private function cellsForCsv(array $values): array
+    private function cellsForCsv(Row $row): array
     {
+        $values = [];
+
+        for ($index = 0; $index < $row->getNumCells(); $index++) {
+            $cell = $row->getCellAtIndex($index);
+            $values[] = $this->stringify($cell === null ? null : $this->cellValue($cell));
+        }
+
         $values = $this->stringifyRow($values);
 
         if (count($values) !== 1) {
@@ -159,6 +178,19 @@ final class ConvertsSpreadsheetToCsv
         }
 
         return $this->delimiterDetector->expandRow($values, $this->embeddedDelimiter);
+    }
+
+    private function cellValue(Cell $cell): mixed
+    {
+        if ($cell instanceof FormulaCell) {
+            $computed = $cell->getComputedValue();
+
+            if ($computed !== null) {
+                return $computed;
+            }
+        }
+
+        return $cell->getValue();
     }
 
     /**
