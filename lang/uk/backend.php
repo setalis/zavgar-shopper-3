@@ -115,6 +115,16 @@ return [
         'import_queued' => 'Нових артикулів поставлено в чергу на затвердження: :count.',
         'import_failed' => 'Не вдалося імпортувати рядків: :count.',
         'import_file_placeholder' => 'CSV або Excel (.xlsx)',
+        'xlsx_title' => 'Імпорт товарів з Excel-файлу',
+        'xlsx_file' => 'Excel-файл',
+        'xlsx_file_helper' => 'Завантажте файл .xlsx, який відповідає шаблону імпорту товарів.',
+        'invalid_spreadsheet' => 'Файл не є дійсною книгою Excel (.xlsx).',
+        'sources' => [
+            'xlsx' => [
+                'name' => 'Excel-файл',
+                'description' => 'Імпортуйте товари з Excel-файлу (.xlsx), який відповідає шаблону імпорту.',
+            ],
+        ],
         'status' => [
             'pending' => 'Очікує',
             'approved' => 'Затверджено',

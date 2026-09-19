@@ -7,8 +7,10 @@ namespace App\Support;
 use DateInterval;
 use DateTimeInterface;
 use League\Csv\Writer;
+use OpenSpout\Common\Exception\OpenSpoutException;
 use OpenSpout\Reader\XLSX\Reader;
 use RuntimeException;
+use Shopper\Core\Exceptions\ProductImportException;
 use ZipArchive;
 
 final class ConvertsSpreadsheetToCsv
@@ -57,13 +59,49 @@ final class ConvertsSpreadsheetToCsv
         return $hasWorkbook;
     }
 
+    public function toTempPath(string $path): string
+    {
+        $stream = $this->handle($path);
+        $tempPath = tempnam(sys_get_temp_dir(), 'product-xlsx-');
+
+        if ($tempPath === false) {
+            fclose($stream);
+
+            throw new RuntimeException('Unable to create a temporary CSV file.');
+        }
+
+        $destination = fopen($tempPath, 'wb');
+
+        if ($destination === false) {
+            fclose($stream);
+
+            throw new RuntimeException('Unable to write a temporary CSV file.');
+        }
+
+        stream_copy_to_stream($stream, $destination);
+        fclose($destination);
+        fclose($stream);
+
+        return $tempPath;
+    }
+
     /**
      * @return resource
      */
     public function handle(string $path)
     {
+        if (! $this->isSpreadsheet($path)) {
+            throw new ProductImportException(__('backend.product_imports.invalid_spreadsheet'));
+        }
+
+        $this->embeddedDelimiter = null;
         $reader = new Reader;
-        $reader->open($path);
+
+        try {
+            $reader->open($path);
+        } catch (OpenSpoutException $e) {
+            throw new ProductImportException(__('backend.product_imports.invalid_spreadsheet'), previous: $e);
+        }
 
         $stream = fopen('php://temp', 'r+');
 
@@ -87,6 +125,10 @@ final class ConvertsSpreadsheetToCsv
 
                 break;
             }
+        } catch (OpenSpoutException $e) {
+            fclose($stream);
+
+            throw new ProductImportException(__('backend.product_imports.invalid_spreadsheet'), previous: $e);
         } finally {
             $reader->close();
         }

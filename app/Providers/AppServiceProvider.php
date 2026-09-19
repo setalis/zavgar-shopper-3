@@ -4,18 +4,23 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Import\Sources\XlsxSource;
 use App\Listeners\DrainQueueAfterResponse;
 use App\Listeners\MergeGuestWishlist;
+use App\Livewire\Shopper\SlideOvers\ImportXlsx;
 use App\Sidebar\HomepageBannersSidebar;
 use App\Support\StorefrontLocale;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Login;
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Queue\Events\JobQueued;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Livewire\Livewire;
+use Shopper\Core\Import\ImportManager;
 use Shopper\Sidebar\SidebarBuilder;
 
 class AppServiceProvider extends ServiceProvider
@@ -27,6 +32,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->registerProductExcelImport();
         $this->registerShopperSidebar();
         $this->configureDefaults();
         StorefrontLocale::applyUrlDefaults();
@@ -35,6 +41,16 @@ class AppServiceProvider extends ServiceProvider
         );
         $this->app['events']->listen(Login::class, MergeGuestWishlist::class);
         $this->app['events']->listen(JobQueued::class, DrainQueueAfterResponse::class);
+    }
+
+    protected function registerProductExcelImport(): void
+    {
+        $this->app->make(ImportManager::class)->extend(
+            'xlsx',
+            fn (Container $app): XlsxSource => $app->make(XlsxSource::class),
+        );
+
+        Livewire::component('shopper-slide-overs.import-xlsx', ImportXlsx::class);
     }
 
     protected function registerShopperSidebar(): void

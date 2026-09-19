@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Shopper\DownloadProductImportXlsxTemplateController;
 use App\Livewire\Shopper\Pages\HomepageBanners\Edit as HomepageBannerEdit;
 use App\Livewire\Shopper\Pages\HomepageBanners\Index as HomepageBannersIndex;
 use App\Livewire\Shopper\Pages\MenuItems\Edit as MenuItemEdit;
@@ -9,6 +10,9 @@ use App\Livewire\Shopper\Pages\MenuItems\Index as MenuItemsIndex;
 use App\Livewire\Shopper\Pages\News\Edit as NewsArticleEdit;
 use App\Livewire\Shopper\Pages\News\Index as NewsArticlesIndex;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/products/import-template.xlsx', DownloadProductImportXlsxTemplateController::class)
+    ->name('products.import-xlsx-template');
 
 Route::get('/banners', HomepageBannersIndex::class)
     ->name('banners.index');

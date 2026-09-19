@@ -115,6 +115,16 @@ return [
         'import_queued' => ':count new SKUs were queued for approval.',
         'import_failed' => ':count rows failed to import.',
         'import_file_placeholder' => 'CSV or Excel (.xlsx)',
+        'xlsx_title' => 'Import products from an Excel file',
+        'xlsx_file' => 'Excel file',
+        'xlsx_file_helper' => 'Upload an .xlsx file that matches the product import template.',
+        'invalid_spreadsheet' => 'The file is not a valid Excel workbook (.xlsx).',
+        'sources' => [
+            'xlsx' => [
+                'name' => 'Excel file',
+                'description' => 'Import your products from an Excel (.xlsx) file that matches the product import template.',
+            ],
+        ],
         'status' => [
             'pending' => 'Pending',
             'approved' => 'Approved',
