@@ -22,7 +22,17 @@ final class SetApplicationLocale
         if (is_string($fromPrefix) && in_array($fromPrefix, $available, true)) {
             $locale = $fromPrefix;
         } elseif (! StorefrontLocale::isStorefrontRequest($request)) {
-            $sessionLocale = session('locale', session('shopper_locale', $default));
+            $adminLocales = array_keys(config('shopper.admin.locales', []));
+            $adminLocale = session('shopper_locale');
+
+            if (is_string($adminLocale) && in_array($adminLocale, $adminLocales, true)) {
+                app()->setLocale($adminLocale);
+                StorefrontLocale::applyUrlDefaults($default);
+
+                return $next($request);
+            }
+
+            $sessionLocale = session('locale', $default);
 
             if (is_string($sessionLocale) && in_array($sessionLocale, $available, true)) {
                 $locale = $sessionLocale;

@@ -129,6 +129,7 @@ return [
     */
 
     'locales' => [
+        'uk' => ['label' => 'Українська', 'flag' => 'ua'],
         'en' => ['label' => 'English', 'flag' => 'gb'],
         'fr' => ['label' => 'Français', 'flag' => 'fr'],
     ],
