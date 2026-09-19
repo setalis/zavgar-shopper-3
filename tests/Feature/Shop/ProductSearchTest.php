@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
+use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Shopper\Core\Models\Currency;
+use Shopper\Core\Models\ProductTag;
 use Shopper\Core\Models\Setting;
 
 uses(RefreshDatabase::class);
@@ -204,10 +206,172 @@ test('search suggestions do not return unpublished products', function (): void 
         ->assertJsonCount(0, 'products');
 });
 
-test('search suggestions reject queries shorter than three characters', function (): void {
-    $this->getJson(route('shop.search.suggest', ['q' => 'ab']))
+test('search suggestions reject queries shorter than two characters', function (): void {
+    $this->getJson(route('shop.search.suggest', ['q' => 'a']))
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['q']);
+});
+
+test('search suggestions accept queries of two characters', function (): void {
+    $product = Product::factory()->standard()->create([
+        'name' => 'OC Adapter',
+        'slug' => 'oc-adapter',
+        'sku' => 'OC-205',
+    ]);
+
+    $this->getJson(route('shop.search.suggest', ['q' => 'OC']))
+        ->assertSuccessful()
+        ->assertJsonCount(1, 'products')
+        ->assertJsonPath('products.0.id', $product->id);
+});
+
+test('search suggestions find products when punctuation differs from the sku', function (string $sku, string $query): void {
+    $product = Product::factory()->standard()->create([
+        'name' => 'OC Sensor',
+        'slug' => 'oc-sensor',
+        'sku' => $sku,
+    ]);
+
+    $this->getJson(route('shop.search.suggest', ['q' => $query]))
+        ->assertSuccessful()
+        ->assertJsonCount(1, 'products')
+        ->assertJsonPath('products.0.id', $product->id);
+})->with([
+    'hyphenated sku and spaced query' => ['oc-205', 'oc 205'],
+    'compact sku and spaced query' => ['oc205', 'oc 205'],
+    'spaced sku and hyphenated query' => ['oc 205', 'oc-205'],
+]);
+
+test('search suggestions find a published product by category name', function (): void {
+    $category = Category::factory()->create([
+        'name' => 'Motor Oils',
+        'slug' => 'motor-oils',
+        'is_enabled' => true,
+        'parent_id' => null,
+    ]);
+
+    $product = Product::factory()->standard()->create([
+        'name' => 'Desk Lamp',
+        'slug' => 'desk-lamp',
+        'sku' => 'SKU-LAMP',
+    ]);
+    $product->categories()->attach($category);
+
+    Product::factory()->standard()->create([
+        'name' => 'Other Product',
+        'slug' => 'other-product',
+        'sku' => 'SKU-OTHER',
+    ]);
+
+    $this->getJson(route('shop.search.suggest', ['q' => 'Motor Oils']))
+        ->assertSuccessful()
+        ->assertJsonCount(1, 'products')
+        ->assertJsonPath('products.0.id', $product->id);
+});
+
+test('search suggestions find a published product when punctuation differs from the category name', function (): void {
+    $category = Category::factory()->create([
+        'name' => 'OC-205 Filters',
+        'slug' => 'oc-205-filters',
+        'is_enabled' => true,
+        'parent_id' => null,
+    ]);
+
+    $product = Product::factory()->standard()->create([
+        'name' => 'Cabin Filter',
+        'slug' => 'cabin-filter',
+        'sku' => 'SKU-FILTER',
+    ]);
+    $product->categories()->attach($category);
+
+    $this->getJson(route('shop.search.suggest', ['q' => 'oc 205']))
+        ->assertSuccessful()
+        ->assertJsonCount(1, 'products')
+        ->assertJsonPath('products.0.id', $product->id);
+});
+
+test('search suggestions do not find products by a disabled category name', function (): void {
+    $category = Category::factory()->create([
+        'name' => 'Hidden Gear',
+        'slug' => 'hidden-gear',
+        'is_enabled' => false,
+        'parent_id' => null,
+    ]);
+
+    $product = Product::factory()->standard()->create([
+        'name' => 'Desk Lamp',
+        'slug' => 'desk-lamp',
+        'sku' => 'SKU-LAMP',
+    ]);
+    $product->categories()->attach($category);
+
+    $this->getJson(route('shop.search.suggest', ['q' => 'Hidden']))
+        ->assertSuccessful()
+        ->assertJsonCount(0, 'products');
+});
+
+test('search suggestions find a published product by tag name', function (): void {
+    $tag = ProductTag::factory()->create([
+        'name' => 'Summer Sale',
+        'slug' => 'summer-sale',
+    ]);
+
+    $product = Product::factory()->standard()->create([
+        'name' => 'Desk Lamp',
+        'slug' => 'desk-lamp',
+        'sku' => 'SKU-LAMP',
+    ]);
+    $product->tags()->attach($tag);
+
+    Product::factory()->standard()->create([
+        'name' => 'Other Product',
+        'slug' => 'other-product',
+        'sku' => 'SKU-OTHER',
+    ]);
+
+    $this->getJson(route('shop.search.suggest', ['q' => 'Summer Sale']))
+        ->assertSuccessful()
+        ->assertJsonCount(1, 'products')
+        ->assertJsonPath('products.0.id', $product->id);
+});
+
+test('search suggestions find a published product when punctuation differs from the tag name', function (): void {
+    $tag = ProductTag::factory()->create([
+        'name' => 'oc-205',
+        'slug' => 'oc-205',
+    ]);
+
+    $product = Product::factory()->standard()->create([
+        'name' => 'Cabin Filter',
+        'slug' => 'cabin-filter',
+        'sku' => 'SKU-FILTER',
+    ]);
+    $product->tags()->attach($tag);
+
+    $this->getJson(route('shop.search.suggest', ['q' => 'oc 205']))
+        ->assertSuccessful()
+        ->assertJsonCount(1, 'products')
+        ->assertJsonPath('products.0.id', $product->id);
+});
+
+test('search suggestions find a variant product when punctuation differs from the variant sku', function (): void {
+    $product = Product::factory()->variant()->create([
+        'name' => 'OC Housing',
+        'slug' => 'oc-housing',
+        'sku' => 'SKU-PARENT',
+    ]);
+
+    ProductVariant::factory()->create([
+        'product_id' => $product->id,
+        'name' => 'Black',
+        'sku' => 'oc-205',
+        'position' => 1,
+    ]);
+
+    $this->getJson(route('shop.search.suggest', ['q' => 'oc 205']))
+        ->assertSuccessful()
+        ->assertJsonCount(1, 'products')
+        ->assertJsonPath('products.0.id', $product->id);
 });
 
 test('search suggestions return only the expected product keys', function (): void {

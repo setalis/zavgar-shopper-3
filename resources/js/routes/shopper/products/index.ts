@@ -270,10 +270,89 @@ variant.head = (args: { product: string | number, variant: string | number } | [
         })
     
     variant.form = variantForm
+/**
+* @see \App\Http\Controllers\Shopper\DownloadProductImportXlsxTemplateController::__invoke
+ * @see app/Http/Controllers/Shopper/DownloadProductImportXlsxTemplateController.php:15
+ * @route '/cpanel/products/import-template.xlsx'
+ */
+export const importXlsxTemplate = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: importXlsxTemplate.url(options),
+    method: 'get',
+})
+
+importXlsxTemplate.definition = {
+    methods: ["get","head"],
+    url: '/cpanel/products/import-template.xlsx',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\Shopper\DownloadProductImportXlsxTemplateController::__invoke
+ * @see app/Http/Controllers/Shopper/DownloadProductImportXlsxTemplateController.php:15
+ * @route '/cpanel/products/import-template.xlsx'
+ */
+importXlsxTemplate.url = (options?: RouteQueryOptions) => {
+    return importXlsxTemplate.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Shopper\DownloadProductImportXlsxTemplateController::__invoke
+ * @see app/Http/Controllers/Shopper/DownloadProductImportXlsxTemplateController.php:15
+ * @route '/cpanel/products/import-template.xlsx'
+ */
+importXlsxTemplate.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: importXlsxTemplate.url(options),
+    method: 'get',
+})
+/**
+* @see \App\Http\Controllers\Shopper\DownloadProductImportXlsxTemplateController::__invoke
+ * @see app/Http/Controllers/Shopper/DownloadProductImportXlsxTemplateController.php:15
+ * @route '/cpanel/products/import-template.xlsx'
+ */
+importXlsxTemplate.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: importXlsxTemplate.url(options),
+    method: 'head',
+})
+
+    /**
+* @see \App\Http\Controllers\Shopper\DownloadProductImportXlsxTemplateController::__invoke
+ * @see app/Http/Controllers/Shopper/DownloadProductImportXlsxTemplateController.php:15
+ * @route '/cpanel/products/import-template.xlsx'
+ */
+    const importXlsxTemplateForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+        action: importXlsxTemplate.url(options),
+        method: 'get',
+    })
+
+            /**
+* @see \App\Http\Controllers\Shopper\DownloadProductImportXlsxTemplateController::__invoke
+ * @see app/Http/Controllers/Shopper/DownloadProductImportXlsxTemplateController.php:15
+ * @route '/cpanel/products/import-template.xlsx'
+ */
+        importXlsxTemplateForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+            action: importXlsxTemplate.url(options),
+            method: 'get',
+        })
+            /**
+* @see \App\Http\Controllers\Shopper\DownloadProductImportXlsxTemplateController::__invoke
+ * @see app/Http/Controllers/Shopper/DownloadProductImportXlsxTemplateController.php:15
+ * @route '/cpanel/products/import-template.xlsx'
+ */
+        importXlsxTemplateForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+            action: importXlsxTemplate.url({
+                        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+                            _method: 'HEAD',
+                            ...(options?.query ?? options?.mergeQuery ?? {}),
+                        }
+                    }),
+            method: 'get',
+        })
+    
+    importXlsxTemplate.form = importXlsxTemplateForm
 const products = {
     index: Object.assign(index, index),
 edit: Object.assign(edit, edit055014),
 variant: Object.assign(variant, variant),
+importXlsxTemplate: Object.assign(importXlsxTemplate, importXlsxTemplate),
 }
 
 export default products

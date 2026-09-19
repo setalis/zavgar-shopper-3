@@ -42,7 +42,7 @@ watch(term, (value) => {
 
     const query = value.trim();
 
-    if (query.length < 3) {
+    if (query.length < 2) {
         requestId += 1;
         products.value = [];
         loading.value = false;

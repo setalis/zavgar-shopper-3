@@ -14,7 +14,7 @@ final class SearchSuggestController extends Controller
     public function __invoke(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'q' => ['required', 'string', 'min:3', 'max:100'],
+            'q' => ['required', 'string', 'min:2', 'max:100'],
         ]);
 
         $products = Product::query()

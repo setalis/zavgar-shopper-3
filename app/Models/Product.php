@@ -9,6 +9,7 @@ use App\Concerns\InteractsWithStorefrontMedia;
 use App\Concerns\ResolvesStorefrontPrice;
 use App\Concerns\ResolvesStorefrontReviews;
 use App\Concerns\ResolvesStorefrontStock;
+use App\Support\NormalizesSearchTerm;
 use App\Support\StorefrontLocale;
 use App\Traits\HasProductPricing;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -43,25 +44,61 @@ final class Product extends Model
     #[Scope]
     protected function matchingSearch(Builder $query, string $term): Builder
     {
-        $escaped = str_replace(['%', '_'], ['\%', '\_'], $term);
-        $like = "%{$escaped}%";
+        $like = NormalizesSearchTerm::likePattern($term);
+        $compacted = NormalizesSearchTerm::alphanumeric($term);
+        $compactedLike = $compacted === '' ? null : NormalizesSearchTerm::likePattern($compacted);
         $table = $query->getModel()->getTable();
 
-        return $query->where(function (Builder $query) use ($like, $table): void {
+        return $query->where(function (Builder $query) use ($like, $compactedLike, $table): void {
             $query->where("{$table}.name", 'like', $like)
-                ->orWhere("{$table}.sku", 'like', $like)
-                ->when(
-                    ! StorefrontLocale::isDefault(),
-                    fn (Builder $query): Builder => $query->orWhereHas(
-                        'translations',
-                        fn (Builder $translations): Builder => $translations
-                            ->where('locale', StorefrontLocale::current())
-                            ->where('name', 'like', $like),
-                    ),
-                )
+                ->orWhere("{$table}.sku", 'like', $like);
+
+            if ($compactedLike !== null) {
+                NormalizesSearchTerm::orWhereCompactedLike($query, "{$table}.name", $compactedLike);
+                NormalizesSearchTerm::orWhereCompactedLike($query, "{$table}.sku", $compactedLike);
+            }
+
+            $query->when(
+                ! StorefrontLocale::isDefault(),
+                fn (Builder $query): Builder => $query->orWhereHas(
+                    'translations',
+                    fn (Builder $translations): Builder => $translations
+                        ->where('locale', StorefrontLocale::current())
+                        ->where(function (Builder $translations) use ($like, $compactedLike): void {
+                            NormalizesSearchTerm::matchColumn($translations, 'name', $like, $compactedLike);
+                        }),
+                ),
+            )
                 ->orWhereHas(
                     'variants',
-                    fn (Builder $variants): Builder => $variants->where('sku', 'like', $like),
+                    fn (Builder $variants): Builder => $variants->where(function (Builder $variants) use ($like, $compactedLike): void {
+                        NormalizesSearchTerm::matchColumn($variants, 'sku', $like, $compactedLike);
+                    }),
+                )
+                ->orWhereHas(
+                    'categories',
+                    fn (Builder $categories): Builder => $categories
+                        ->where('is_enabled', true)
+                        ->where(function (Builder $categories) use ($like, $compactedLike): void {
+                            NormalizesSearchTerm::matchColumn($categories, 'name', $like, $compactedLike);
+
+                            if (! StorefrontLocale::isDefault()) {
+                                $categories->orWhereHas(
+                                    'translations',
+                                    fn (Builder $translations): Builder => $translations
+                                        ->where('locale', StorefrontLocale::current())
+                                        ->where(function (Builder $translations) use ($like, $compactedLike): void {
+                                            NormalizesSearchTerm::matchColumn($translations, 'name', $like, $compactedLike);
+                                        }),
+                                );
+                            }
+                        }),
+                )
+                ->orWhereHas(
+                    'tags',
+                    fn (Builder $tags): Builder => $tags->where(function (Builder $tags) use ($like, $compactedLike): void {
+                        NormalizesSearchTerm::matchColumn($tags, 'name', $like, $compactedLike);
+                    }),
                 );
         });
     }
