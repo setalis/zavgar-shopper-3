@@ -68,6 +68,24 @@ test('admins can browse news articles', function (): void {
         ->assertSee('Spring restock');
 });
 
+test('losing the create permission after mount shows an unauthorized notification instead of failing', function (): void {
+    $editor = User::factory()->create();
+    $editor->givePermissionTo(NewsPermission::Create->value);
+
+    $component = Livewire::actingAs($editor)
+        ->test(Edit::class)
+        ->set('data.title', 'Blocked article')
+        ->set('data.slug', 'blocked-article');
+
+    $editor->revokePermissionTo(NewsPermission::Create->value);
+
+    $component
+        ->call('store')
+        ->assertNotified(__('shopper::notifications.unauthorized.title'));
+
+    expect(NewsArticle::query()->count())->toBe(0);
+});
+
 test('admins can create a news article', function (): void {
     Livewire::actingAs($this->admin)
         ->test(Edit::class)

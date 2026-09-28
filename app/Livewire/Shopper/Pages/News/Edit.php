@@ -20,13 +20,11 @@ use Filament\Schemas\Components\Group;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Shopper\Components\Section;
 use Shopper\Livewire\Pages\AbstractPageComponent;
 use Shopper\Traits\HandlesAuthorizationExceptions;
-use Throwable;
 use Tiptap\Editor as TiptapEditor;
 
 /**
@@ -62,21 +60,6 @@ final class Edit extends AbstractPageComponent implements HasActions, HasSchemas
             'is_enabled' => true,
             'published_at' => now(),
         ]);
-    }
-
-    public function exception(Throwable $e, callable $stopPropagation): void
-    {
-        if (! $e instanceof AuthorizationException) {
-            return;
-        }
-
-        Notification::make()
-            ->title(__('shopper::notifications.unauthorized.title'))
-            ->body($e->getMessage() ?: __('shopper::notifications.unauthorized.body'))
-            ->warning()
-            ->send();
-
-        $stopPropagation();
     }
 
     public function form(Schema $schema): Schema

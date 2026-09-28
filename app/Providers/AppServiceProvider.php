@@ -66,6 +66,10 @@ class AppServiceProvider extends ServiceProvider
 
     protected function configureDefaults(): void
     {
+        // Shopper core calls setlocale(LC_ALL, 'uk'), which Windows resolves to "English_United Kingdom.1252".
+        // A single-byte ctype treats UTF-8 bytes like 0xA0 as whitespace and corrupts Cyrillic strings.
+        setlocale(LC_CTYPE, 'C');
+
         Date::use(CarbonImmutable::class);
 
         DB::prohibitDestructiveCommands(

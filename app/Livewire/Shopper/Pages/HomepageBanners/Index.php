@@ -20,13 +20,11 @@ use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
 use Mckenziearts\Icons\Untitledui\Enums\Untitledui;
 use Shopper\Livewire\Pages\AbstractPageComponent;
 use Shopper\Traits\HandlesAuthorizationExceptions;
-use Throwable;
 
 final class Index extends AbstractPageComponent implements HasActions, HasSchemas, HasTable
 {
@@ -40,21 +38,6 @@ final class Index extends AbstractPageComponent implements HasActions, HasSchema
     {
         $this->authorize(HomepageBannerPermission::Browse->value);
         $this->syncPlacementFromRoute();
-    }
-
-    public function exception(Throwable $e, callable $stopPropagation): void
-    {
-        if (! $e instanceof AuthorizationException) {
-            return;
-        }
-
-        Notification::make()
-            ->title(__('shopper::notifications.unauthorized.title'))
-            ->body($e->getMessage() ?: __('shopper::notifications.unauthorized.body'))
-            ->warning()
-            ->send();
-
-        $stopPropagation();
     }
 
     public function table(Table $table): Table
