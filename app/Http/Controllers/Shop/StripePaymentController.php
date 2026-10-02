@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Shop;
 
 use App\Http\Controllers\Controller;
+use App\Storefront\Checkout\CheckoutOrderAccess;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,8 +17,9 @@ final class StripePaymentController extends Controller
     {
         $order = Order::query()
             ->where('number', $number)
-            ->where('customer_id', auth()->id())
             ->firstOrFail();
+
+        abort_unless(CheckoutOrderAccess::canView($order), 404);
 
         $stripePayment = session()->pull('stripe_payment');
 

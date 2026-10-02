@@ -45,12 +45,11 @@ beforeEach(function (): void {
     $this->seed(AuthTableSeeder::class);
 });
 
-test('guests are redirected away from checkout', function (): void {
-    $this->get(route('shop.checkout.index'))->assertRedirect();
-});
-
-test('authenticated customers can place a cash-on-delivery order', function (): void {
-    $user = User::factory()->create();
+/**
+ * @return array{product: Product, paymentMethod: PaymentMethod, shippingOption: CarrierOption, country: Country}
+ */
+function createCheckoutCatalog(Currency $currency, int $productAmount = 19900, int $deliveryAmount = 500): array
+{
     $product = Product::factory()->standard()->create([
         'name' => 'Studio Camera',
         'slug' => 'studio-camera',
@@ -60,10 +59,10 @@ test('authenticated customers can place a cash-on-delivery order', function (): 
     Price::query()->create([
         'priceable_type' => 'product',
         'priceable_id' => $product->id,
-        'amount' => 19900,
+        'amount' => $productAmount,
         'compare_amount' => null,
         'cost_amount' => null,
-        'currency_id' => $this->currency->id,
+        'currency_id' => $currency->id,
     ]);
 
     $inventory = Inventory::factory()->create([
@@ -75,7 +74,7 @@ test('authenticated customers can place a cash-on-delivery order', function (): 
 
     $zone = Zone::factory()->create([
         'name' => 'Ukraine',
-        'currency_id' => $this->currency->id,
+        'currency_id' => $currency->id,
         'is_enabled' => true,
     ]);
 
@@ -107,7 +106,7 @@ test('authenticated customers can place a cash-on-delivery order', function (): 
 
     $shippingOption = CarrierOption::factory()->create([
         'name' => 'Standard delivery',
-        'price' => 500,
+        'price' => $deliveryAmount,
         'carrier_id' => $carrier->id,
         'zone_id' => $zone->id,
         'is_enabled' => true,
@@ -116,19 +115,16 @@ test('authenticated customers can place a cash-on-delivery order', function (): 
     GetCountriesByZone::flush();
     Cache::forget("zone.country.{$country->id}");
 
-    $this->actingAs($user);
-    ZoneSessionManager::setSessionForCountryCode($country->cca2);
+    return compact('product', 'paymentMethod', 'shippingOption', 'country');
+}
 
-    $this->post(route('shop.cart.add'), [
-        'product_id' => $product->id,
-        'quantity' => 1,
-    ])->assertRedirect();
-
-    $this->get(route('shop.checkout.index'))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page->component('shop/checkout'));
-
-    $this->post(route('shop.checkout.shipping-address'), [
+/**
+ * @param  array<string, mixed>  $overrides
+ * @return array<string, mixed>
+ */
+function shippingAddressPayload(array $overrides = []): array
+{
+    return [
         'first_name' => 'Olena',
         'last_name' => 'Koval',
         'street_address' => 'Khreshchatyk 1',
@@ -137,26 +133,76 @@ test('authenticated customers can place a cash-on-delivery order', function (): 
         'city' => 'Kyiv',
         'state' => null,
         'phone_number' => '0955807707',
+        ...$overrides,
+    ];
+}
+
+/**
+ * @param  array{product: Product, paymentMethod: PaymentMethod, shippingOption: CarrierOption, country: Country}  $catalog
+ */
+function addProductToCart(array $catalog): void
+{
+    ZoneSessionManager::setSessionForCountryCode($catalog['country']->cca2);
+
+    test()->post(route('shop.cart.add'), [
+        'product_id' => $catalog['product']->id,
+        'quantity' => 1,
+    ])->assertRedirect();
+}
+
+/**
+ * @param  array{product: Product, paymentMethod: PaymentMethod, shippingOption: CarrierOption, country: Country}  $catalog
+ */
+function completeDeliveryAndPayment(array $catalog): void
+{
+    test()->post(route('shop.checkout.shipping-option'), [
+        'service_code' => $catalog['shippingOption']->public_id ?? $catalog['shippingOption']->id,
     ])->assertRedirect(route('shop.checkout.index'));
 
-    $this->post(route('shop.checkout.shipping-option'), [
-        'service_code' => $shippingOption->public_id ?? $shippingOption->id,
-    ])->assertRedirect(route('shop.checkout.index'));
-
-    $this->post(route('shop.checkout.prepare-payment'), [
-        'payment_method_id' => $paymentMethod->id,
+    test()->post(route('shop.checkout.prepare-payment'), [
+        'payment_method_id' => $catalog['paymentMethod']->id,
     ])->assertRedirect(route('shop.checkout.index', ['step' => 3]));
 
-    $this->post(route('shop.checkout.place-order'), [
-        'payment_method_id' => $paymentMethod->id,
+    test()->post(route('shop.checkout.place-order'), [
+        'payment_method_id' => $catalog['paymentMethod']->id,
     ])->assertSessionHasNoErrors();
+}
+
+test('guests can open checkout', function (): void {
+    $catalog = createCheckoutCatalog($this->currency);
+    addProductToCart($catalog);
+
+    $this->get(route('shop.checkout.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('shop/checkout')
+            ->where('isGuest', true)
+            ->where('checkoutEmailExists', false)
+        );
+});
+
+test('authenticated customers can place a cash-on-delivery order', function (): void {
+    $user = User::factory()->create();
+    $catalog = createCheckoutCatalog($this->currency);
+
+    $this->actingAs($user);
+    addProductToCart($catalog);
+
+    $this->get(route('shop.checkout.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->component('shop/checkout')->where('isGuest', false));
+
+    $this->post(route('shop.checkout.shipping-address'), shippingAddressPayload())
+        ->assertRedirect(route('shop.checkout.index'));
+
+    completeDeliveryAndPayment($catalog);
 
     $order = Order::query()
         ->where('customer_id', $user->id)
         ->first();
 
     expect($order)->not->toBeNull()
-        ->and($order->payment_method_id)->toBe($paymentMethod->id)
+        ->and($order->payment_method_id)->toBe($catalog['paymentMethod']->id)
         ->and($order->email)->toBe($user->email);
 
     $this->get(route('shop.checkout.success', $order))
@@ -169,94 +215,142 @@ test('authenticated customers can place a cash-on-delivery order', function (): 
     expect(resolve(CartGateway::class)->current())->toBeNull();
 });
 
+test('guests can place an order without registering', function (): void {
+    $catalog = createCheckoutCatalog($this->currency);
+    addProductToCart($catalog);
+
+    $this->post(route('shop.checkout.shipping-address'), shippingAddressPayload([
+        'email' => 'guest@example.com',
+    ]))->assertRedirect(route('shop.checkout.index'));
+
+    completeDeliveryAndPayment($catalog);
+
+    $order = Order::query()->where('email', 'guest@example.com')->first();
+
+    expect($order)->not->toBeNull()
+        ->and($order->customer_id)->toBeNull();
+
+    $this->assertGuest();
+
+    $this->get(route('shop.checkout.success', $order))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('order.id', $order->id));
+});
+
+test('guests cannot view another guest order', function (): void {
+    $catalog = createCheckoutCatalog($this->currency);
+    addProductToCart($catalog);
+
+    $this->post(route('shop.checkout.shipping-address'), shippingAddressPayload([
+        'email' => 'guest@example.com',
+    ]));
+
+    completeDeliveryAndPayment($catalog);
+
+    $order = Order::query()->where('email', 'guest@example.com')->firstOrFail();
+
+    $this->flushSession();
+
+    $this->get(route('shop.checkout.success', $order))->assertForbidden();
+});
+
+test('guests can create an account during checkout', function (): void {
+    $catalog = createCheckoutCatalog($this->currency);
+    addProductToCart($catalog);
+
+    $this->post(route('shop.checkout.shipping-address'), shippingAddressPayload([
+        'email' => 'new-customer@example.com',
+        'create_account' => true,
+        'password' => 'Secret-password-123',
+        'password_confirmation' => 'Secret-password-123',
+    ]))->assertSessionHasNoErrors()->assertRedirect(route('shop.checkout.index'));
+
+    $user = User::query()->where('email', 'new-customer@example.com')->first();
+
+    expect($user)->not->toBeNull()
+        ->and($user->first_name)->toBe('Olena');
+
+    $this->assertAuthenticatedAs($user);
+
+    completeDeliveryAndPayment($catalog);
+
+    expect(Order::query()->where('customer_id', $user->id)->exists())->toBeTrue();
+});
+
+test('guests are offered to log in when the email already belongs to an account', function (): void {
+    $user = User::factory()->create(['email' => 'existing@example.com']);
+    $catalog = createCheckoutCatalog($this->currency);
+    addProductToCart($catalog);
+
+    $payload = shippingAddressPayload(['email' => $user->email]);
+
+    $this->from(route('shop.checkout.index'))
+        ->post(route('shop.checkout.shipping-address'), $payload)
+        ->assertRedirect(route('shop.checkout.index'))
+        ->assertSessionHas('checkout_email_exists', true)
+        ->assertSessionHas('url.intended', route('shop.checkout.index'))
+        ->assertSessionHasInput('email', $user->email)
+        ->assertSessionMissing('checkout.shipping_address');
+
+    $this->get(route('shop.checkout.index'))
+        ->assertInertia(fn ($page) => $page->where('checkoutEmailExists', true));
+
+    $this->assertGuest();
+});
+
+test('guests with an existing email can continue as guest', function (): void {
+    $user = User::factory()->create(['email' => 'existing@example.com']);
+    $catalog = createCheckoutCatalog($this->currency);
+    addProductToCart($catalog);
+
+    $this->post(route('shop.checkout.shipping-address'), shippingAddressPayload([
+        'email' => $user->email,
+        'continue_as_guest' => true,
+    ]))->assertRedirect(route('shop.checkout.index'));
+
+    completeDeliveryAndPayment($catalog);
+
+    $order = Order::query()->where('email', $user->email)->first();
+
+    expect($order)->not->toBeNull()
+        ->and($order->customer_id)->toBeNull();
+
+    $this->assertGuest();
+});
+
+test('guests cannot register with an email that already belongs to an account', function (): void {
+    $user = User::factory()->create(['email' => 'existing@example.com']);
+    $catalog = createCheckoutCatalog($this->currency);
+    addProductToCart($catalog);
+
+    $this->from(route('shop.checkout.index'))
+        ->post(route('shop.checkout.shipping-address'), shippingAddressPayload([
+            'email' => $user->email,
+            'create_account' => true,
+            'continue_as_guest' => true,
+            'password' => 'Secret-password-123',
+            'password_confirmation' => 'Secret-password-123',
+        ]))
+        ->assertRedirect(route('shop.checkout.index'))
+        ->assertSessionHas('checkout_email_exists', true);
+
+    expect(User::query()->where('email', $user->email)->count())->toBe(1);
+
+    $this->assertGuest();
+});
+
 test('checkout total includes the selected delivery amount once', function (): void {
     $user = User::factory()->create();
-    $product = Product::factory()->standard()->create([
-        'name' => 'Studio Camera',
-        'slug' => 'studio-camera',
-        'allow_backorder' => true,
-    ]);
-
-    Price::query()->create([
-        'priceable_type' => 'product',
-        'priceable_id' => $product->id,
-        'amount' => 45000,
-        'compare_amount' => null,
-        'cost_amount' => null,
-        'currency_id' => $this->currency->id,
-    ]);
-
-    $inventory = Inventory::factory()->create([
-        'is_default' => true,
-        'code' => 'checkout-totals-wh',
-    ]);
-
-    $product->mutateStock($inventory->id, 5);
-
-    $zone = Zone::factory()->create([
-        'name' => 'Ukraine',
-        'currency_id' => $this->currency->id,
-        'is_enabled' => true,
-    ]);
-
-    $country = Country::factory()->create([
-        'name' => 'Ukraine',
-        'cca2' => 'UA',
-        'cca3' => 'UKR',
-    ]);
-
-    $zone->countries()->attach($country->id);
-
-    $paymentMethod = PaymentMethod::factory()->create([
-        'title' => 'Cash on delivery',
-        'slug' => 'cod-totals',
-        'driver' => 'manual',
-        'is_enabled' => true,
-    ]);
-
-    $zone->paymentMethods()->attach($paymentMethod->id);
-
-    $carrier = Carrier::factory()->create([
-        'name' => 'Manual Post',
-        'slug' => 'manual-post-totals',
-        'is_enabled' => true,
-        'driver' => null,
-    ]);
-
-    $zone->carriers()->attach($carrier->id);
-
-    $shippingOption = CarrierOption::factory()->create([
-        'name' => 'Standard delivery',
-        'price' => 10000,
-        'carrier_id' => $carrier->id,
-        'zone_id' => $zone->id,
-        'is_enabled' => true,
-    ]);
-
-    GetCountriesByZone::flush();
-    Cache::forget("zone.country.{$country->id}");
+    $catalog = createCheckoutCatalog($this->currency, productAmount: 45000, deliveryAmount: 10000);
 
     $this->actingAs($user);
-    ZoneSessionManager::setSessionForCountryCode($country->cca2);
+    addProductToCart($catalog);
 
-    $this->post(route('shop.cart.add'), [
-        'product_id' => $product->id,
-        'quantity' => 1,
-    ])->assertRedirect();
-
-    $this->post(route('shop.checkout.shipping-address'), [
-        'first_name' => 'Olena',
-        'last_name' => 'Koval',
-        'street_address' => 'Khreshchatyk 1',
-        'street_address_plus' => null,
-        'postal_code' => '01001',
-        'city' => 'Kyiv',
-        'state' => null,
-        'phone_number' => '0955807707',
-    ])->assertRedirect(route('shop.checkout.index'));
+    $this->post(route('shop.checkout.shipping-address'), shippingAddressPayload())
+        ->assertRedirect(route('shop.checkout.index'));
 
     $this->post(route('shop.checkout.shipping-option'), [
-        'service_code' => $shippingOption->public_id ?? $shippingOption->id,
+        'service_code' => $catalog['shippingOption']->public_id ?? $catalog['shippingOption']->id,
     ])->assertRedirect(route('shop.checkout.index'));
 
     $this->get(route('shop.checkout.index'))

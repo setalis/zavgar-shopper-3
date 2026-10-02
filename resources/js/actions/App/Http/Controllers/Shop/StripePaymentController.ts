@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Shop\StripePaymentController::__invoke
- * @see app/Http/Controllers/Shop/StripePaymentController.php:15
+ * @see app/Http/Controllers/Shop/StripePaymentController.php:16
  * @route '/checkout/payment/{number}'
  */
 const StripePaymentController = (args: { number: string | number } | [number: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ StripePaymentController.definition = {
 
 /**
 * @see \App\Http\Controllers\Shop\StripePaymentController::__invoke
- * @see app/Http/Controllers/Shop/StripePaymentController.php:15
+ * @see app/Http/Controllers/Shop/StripePaymentController.php:16
  * @route '/checkout/payment/{number}'
  */
 StripePaymentController.url = (args: { number: string | number } | [number: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -44,7 +44,7 @@ StripePaymentController.url = (args: { number: string | number } | [number: stri
 
 /**
 * @see \App\Http\Controllers\Shop\StripePaymentController::__invoke
- * @see app/Http/Controllers/Shop/StripePaymentController.php:15
+ * @see app/Http/Controllers/Shop/StripePaymentController.php:16
  * @route '/checkout/payment/{number}'
  */
 StripePaymentController.get = (args: { number: string | number } | [number: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -53,7 +53,7 @@ StripePaymentController.get = (args: { number: string | number } | [number: stri
 })
 /**
 * @see \App\Http\Controllers\Shop\StripePaymentController::__invoke
- * @see app/Http/Controllers/Shop/StripePaymentController.php:15
+ * @see app/Http/Controllers/Shop/StripePaymentController.php:16
  * @route '/checkout/payment/{number}'
  */
 StripePaymentController.head = (args: { number: string | number } | [number: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -63,7 +63,7 @@ StripePaymentController.head = (args: { number: string | number } | [number: str
 
     /**
 * @see \App\Http\Controllers\Shop\StripePaymentController::__invoke
- * @see app/Http/Controllers/Shop/StripePaymentController.php:15
+ * @see app/Http/Controllers/Shop/StripePaymentController.php:16
  * @route '/checkout/payment/{number}'
  */
     const StripePaymentControllerForm = (args: { number: string | number } | [number: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -73,7 +73,7 @@ StripePaymentController.head = (args: { number: string | number } | [number: str
 
             /**
 * @see \App\Http\Controllers\Shop\StripePaymentController::__invoke
- * @see app/Http/Controllers/Shop/StripePaymentController.php:15
+ * @see app/Http/Controllers/Shop/StripePaymentController.php:16
  * @route '/checkout/payment/{number}'
  */
         StripePaymentControllerForm.get = (args: { number: string | number } | [number: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -82,7 +82,7 @@ StripePaymentController.head = (args: { number: string | number } | [number: str
         })
             /**
 * @see \App\Http\Controllers\Shop\StripePaymentController::__invoke
- * @see app/Http/Controllers/Shop/StripePaymentController.php:15
+ * @see app/Http/Controllers/Shop/StripePaymentController.php:16
  * @route '/checkout/payment/{number}'
  */
         StripePaymentControllerForm.head = (args: { number: string | number } | [number: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { Check, ChevronRight, Lock, ShoppingBag } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
+import PasswordInput from '@/components/password-input.vue';
 import Container from '@/components/shop/container.vue';
 import PageHead from '@/components/shop/page-head.vue';
 import StripePaymentForm from '@/components/shop/stripe-payment-form.vue';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -14,12 +16,17 @@ import { useShop } from '@/composables/useShop';
 import { useLocalizedRoute } from '@/composables/useLocalizedRoute';
 import { useTrans } from '@/composables/useTrans';
 import { formatMoney } from '@/lib/format';
-import { home } from '@/routes';
+import { home, login } from '@/routes';
 import * as shop from '@/routes/shop';
 import * as checkout from '@/routes/shop/checkout';
 import type { Address, Cart, CartContext, DeliveryOption } from '@/types/shop';
 
 type ShippingAddressForm = {
+    email?: string;
+    create_account?: boolean;
+    continue_as_guest?: boolean;
+    password?: string;
+    password_confirmation?: string;
     first_name: string;
     last_name: string;
     street_address: string;
@@ -34,6 +41,9 @@ const props = defineProps<{
     cart: Cart;
     cartContext: CartContext;
     savedAddresses: Address[];
+    isGuest: boolean;
+    checkoutEmail: string | null;
+    checkoutEmailExists: boolean;
     shippingAddress: ShippingAddressForm | null;
     deliveryOptions: DeliveryOption[];
     selectedDeliveryOption: string | number | null;
@@ -73,6 +83,11 @@ const maxStep = computed<1 | 2 | 3>(() => {
 const selectedAddressId = ref<number | null>(null);
 
 const addressForm = useForm<ShippingAddressForm>({
+    email: props.checkoutEmail ?? '',
+    create_account: false,
+    continue_as_guest: false,
+    password: '',
+    password_confirmation: '',
     first_name: props.shippingAddress?.first_name ?? '',
     last_name: props.shippingAddress?.last_name ?? '',
     street_address: props.shippingAddress?.street_address ?? '',
@@ -195,8 +210,40 @@ function goToStep(target: 1 | 2 | 3): void {
     );
 }
 
+watch(
+    () => addressForm.email,
+    () => {
+        addressForm.continue_as_guest = false;
+    },
+);
+
 function submitAddress(): void {
-    addressForm.post(localized(checkout.shippingAddress.url()), { preserveScroll: true });
+    addressForm
+        .transform((data) =>
+            props.isGuest
+                ? data
+                : {
+                      first_name: data.first_name,
+                      last_name: data.last_name,
+                      street_address: data.street_address,
+                      street_address_plus: data.street_address_plus,
+                      postal_code: data.postal_code,
+                      city: data.city,
+                      state: data.state,
+                      phone_number: data.phone_number,
+                  },
+        )
+        .post(localized(checkout.shippingAddress.url()), {
+            preserveScroll: true,
+            preserveState: true,
+            onFinish: () => addressForm.reset('password', 'password_confirmation'),
+        });
+}
+
+function continueAsGuest(): void {
+    addressForm.create_account = false;
+    addressForm.continue_as_guest = true;
+    submitAddress();
 }
 
 function submitShipping(): void {
@@ -329,6 +376,123 @@ function lineName(line: Cart['lines'][number]): string {
                     </div>
 
                     <form class="space-y-5" @submit.prevent="submitAddress">
+                        <template v-if="isGuest">
+                            <div
+                                class="flex flex-wrap items-baseline justify-between gap-2"
+                            >
+                                <h2 class="text-lg">
+                                    {{ t('shop.checkout.contact') }}
+                                </h2>
+                                <p class="text-sm text-ink-mute">
+                                    {{ t('shop.checkout.have_account') }}
+                                    <Link
+                                        :href="localized(login.url())"
+                                        class="font-semibold text-ink underline underline-offset-4 transition hover:text-brand"
+                                    >
+                                        {{ t('shop.checkout.log_in') }}
+                                    </Link>
+                                </p>
+                            </div>
+
+                            <div class="grid gap-2">
+                                <Label for="email">
+                                    {{ t('shop.checkout.email') }}
+                                </Label>
+                                <Input
+                                    id="email"
+                                    v-model="addressForm.email"
+                                    type="email"
+                                    autocomplete="email"
+                                />
+                                <p
+                                    v-if="addressForm.errors.email"
+                                    class="text-xs text-destructive"
+                                >
+                                    {{ addressForm.errors.email }}
+                                </p>
+                            </div>
+
+                            <div
+                                v-if="
+                                    checkoutEmailExists &&
+                                    !addressForm.continue_as_guest
+                                "
+                                role="status"
+                                class="space-y-3 rounded-lg border border-brand-line bg-brand-soft p-4"
+                            >
+                                <p class="text-sm text-ink">
+                                    {{ t('shop.checkout.email_exists') }}
+                                </p>
+                                <div class="flex flex-wrap gap-3">
+                                    <Button as-child size="sm">
+                                        <Link :href="localized(login.url())">
+                                            {{ t('shop.checkout.log_in') }}
+                                        </Link>
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        :disabled="addressForm.processing"
+                                        @click="continueAsGuest"
+                                    >
+                                        {{ t('shop.checkout.continue_as_guest') }}
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <Label
+                                for="create_account"
+                                class="flex items-center gap-3"
+                            >
+                                <Checkbox
+                                    id="create_account"
+                                    v-model="addressForm.create_account"
+                                />
+                                <span>{{ t('shop.checkout.create_account') }}</span>
+                            </Label>
+
+                            <div
+                                v-if="addressForm.create_account"
+                                class="grid gap-4 sm:grid-cols-2"
+                            >
+                                <div class="grid gap-2">
+                                    <Label for="password">
+                                        {{ t('shop.checkout.password') }}
+                                    </Label>
+                                    <PasswordInput
+                                        id="password"
+                                        v-model="addressForm.password"
+                                        autocomplete="new-password"
+                                    />
+                                    <p
+                                        v-if="addressForm.errors.password"
+                                        class="text-xs text-destructive"
+                                    >
+                                        {{ addressForm.errors.password }}
+                                    </p>
+                                </div>
+                                <div class="grid gap-2">
+                                    <Label for="password_confirmation">
+                                        {{
+                                            t(
+                                                'shop.checkout.password_confirmation',
+                                            )
+                                        }}
+                                    </Label>
+                                    <PasswordInput
+                                        id="password_confirmation"
+                                        v-model="
+                                            addressForm.password_confirmation
+                                        "
+                                        autocomplete="new-password"
+                                    />
+                                </div>
+                            </div>
+
+                            <hr class="border-rule" />
+                        </template>
+
                         <h2 class="text-lg">
                             {{ t('shop.checkout.shipping_address') }}
                         </h2>

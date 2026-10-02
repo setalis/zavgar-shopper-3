@@ -65,7 +65,7 @@ $storefront = function (): void {
     Route::patch('zone', [ZoneController::class, 'update'])->middleware('throttle:30,1')->name('shop.zone.update');
     Route::patch('locale', [LocaleController::class, 'update'])->middleware('throttle:30,1')->name('locale.update');
 
-    Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::middleware('throttle:60,1')->group(function (): void {
         Route::get('checkout', [CheckoutController::class, 'index'])->name('shop.checkout.index');
         Route::post('checkout/shipping-address', [CheckoutController::class, 'saveShippingAddress'])->name('shop.checkout.shipping-address');
         Route::post('checkout/shipping-option', [CheckoutController::class, 'saveShippingOption'])->name('shop.checkout.shipping-option');

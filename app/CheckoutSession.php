@@ -8,6 +8,8 @@ final class CheckoutSession
 {
     public const string KEY = 'checkout';
 
+    public const string EMAIL = 'checkout.email';
+
     public const string SHIPPING_ADDRESS = 'checkout.shipping_address';
 
     public const string BILLING_ADDRESS = 'checkout.billing_address';

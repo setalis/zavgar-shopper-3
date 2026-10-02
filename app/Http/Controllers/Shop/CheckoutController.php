@@ -11,11 +11,14 @@ use App\Actions\CreateOrder;
 use App\Actions\LocalizeCatalog;
 use App\Actions\ZoneSessionManager;
 use App\CheckoutSession;
+use App\Concerns\PasswordValidationRules;
 use App\Http\Controllers\Controller;
 use App\Storefront\Cart\CartGateway;
+use App\Storefront\Checkout\ResolveCheckoutCustomer;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -34,6 +37,8 @@ use Throwable;
 
 final class CheckoutController extends Controller
 {
+    use PasswordValidationRules;
+
     public function __construct(
         private CartGateway $cart,
     ) {}
@@ -91,6 +96,9 @@ final class CheckoutController extends Controller
             'cart' => $cart,
             'cartContext' => $context,
             'savedAddresses' => Auth::user()?->addresses()->with('country')->get() ?? [],
+            'isGuest' => ! Auth::check(),
+            'checkoutEmail' => Auth::user()?->email ?? data_get($checkout, 'email'),
+            'checkoutEmailExists' => (bool) session('checkout_email_exists', false),
             'shippingAddress' => $shippingAddress,
             'deliveryOptions' => $deliveryOptions,
             'selectedDeliveryOption' => $shippingOption['id'] ?? null,
@@ -105,7 +113,7 @@ final class CheckoutController extends Controller
         ]);
     }
 
-    public function saveShippingAddress(Request $request): RedirectResponse
+    public function saveShippingAddress(Request $request, ResolveCheckoutCustomer $resolveCustomer): RedirectResponse
     {
         $data = $request->validate([
             'first_name' => ['required', 'string', 'max:255'],
@@ -116,6 +124,27 @@ final class CheckoutController extends Controller
             'city' => ['required', 'string', 'max:255'],
             'state' => ['nullable', 'string', 'max:255'],
             'phone_number' => ['nullable', 'string', 'max:20'],
+            ...$this->guestRules(),
+        ]);
+
+        if (! Auth::check()) {
+            $wantsAccount = (bool) ($data['create_account'] ?? false);
+            $continuesAsGuest = (bool) ($data['continue_as_guest'] ?? false);
+
+            if (($wantsAccount || ! $continuesAsGuest) && $resolveCustomer->emailBelongsToExistingUser($data['email'])) {
+                redirect()->setIntendedUrl(route('shop.checkout.index'));
+
+                return back()
+                    ->withInput($request->except(['password', 'password_confirmation']))
+                    ->with('checkout_email_exists', true);
+            }
+        }
+
+        $resolveCustomer->handle($data);
+
+        $data = Arr::only($data, [
+            'first_name', 'last_name', 'street_address', 'street_address_plus',
+            'postal_code', 'city', 'state', 'phone_number',
         ]);
 
         $zone = ZoneSessionManager::getSession();
@@ -373,6 +402,24 @@ final class CheckoutController extends Controller
         $this->cart->forget();
 
         return redirect()->route('shop.checkout.success', ['order' => $order->id]);
+    }
+
+    /**
+     * @return array<string, array<int, mixed>>
+     */
+    private function guestRules(): array
+    {
+        if (Auth::check()) {
+            return [];
+        }
+
+        return [
+            'email' => ['required', 'string', 'email', 'max:255'],
+            'create_account' => ['nullable', 'boolean'],
+            'continue_as_guest' => ['nullable', 'boolean'],
+            'password' => ['exclude_unless:create_account,true', ...$this->passwordRules()],
+            'password_confirmation' => ['exclude_unless:create_account,true', 'string'],
+        ];
     }
 
     /**

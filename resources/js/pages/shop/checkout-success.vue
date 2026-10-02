@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import { Check } from 'lucide-vue-next';
 import Container from '@/components/shop/container.vue';
 import TrustBadges from '@/components/shop/trust-badges.vue';
@@ -22,6 +22,7 @@ type Order = {
 
 const props = defineProps<{ order: Order }>();
 
+const page = usePage();
 const { t } = useTrans();
 const { localized } = useLocalizedRoute();
 
@@ -118,7 +119,7 @@ function statusLabel(status: OrderStatusLike): string {
             <div
                 class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row"
             >
-                <Button as-child>
+                <Button v-if="page.props.auth.user" as-child>
                     <Link :href="localized(accountOrders.url())">
                         {{ t('shop.checkout.success.view_orders') }}
                     </Link>

@@ -34,7 +34,7 @@ final readonly class PlaceOrder
         $cart = $this->cart->currentOrCreate();
 
         abort_if(
-            Auth::check() && $cart->customer_id !== null && $cart->customer_id !== Auth::id(),
+            $cart->customer_id !== null && $cart->customer_id !== Auth::id(),
             403,
         );
 
@@ -44,6 +44,14 @@ final readonly class PlaceOrder
 
         if (Auth::check() && blank($cart->email)) {
             $cart->update(['email' => Auth::user()?->email]);
+        }
+
+        if (! Auth::check()) {
+            $guestEmail = data_get($checkout, 'email');
+
+            abort_if(blank($guestEmail), 422, __('backend.order.session_incomplete'));
+
+            $cart->update(['email' => $guestEmail]);
         }
 
         $paymentMethodId = data_get($checkout, 'payment.0.id');
@@ -57,9 +65,11 @@ final readonly class PlaceOrder
         abort_unless($lock->get(), 409, __('backend.order.checkout_in_progress'));
 
         try {
-            return DB::transaction(function () use ($cart): Order {
-                return $this->createOrderFromCart->execute($cart);
-            });
+            $order = DB::transaction(fn (): Order => $this->createOrderFromCart->execute($cart));
+
+            CheckoutOrderAccess::remember($order);
+
+            return $order;
         } finally {
             $lock->release();
         }
