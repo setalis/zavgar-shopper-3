@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Livewire\Shopper\SlideOvers;
 
+use App\Enums\ProductImportRowOutcome;
 use App\Import\ProductImportRow;
 use App\Import\ProductImportTemplate;
+use App\Import\RoutesProductImportRow;
 use App\Import\StartProductImport;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
@@ -208,8 +210,9 @@ final class ImportXlsx extends SlideOverComponent implements HasActions, HasSche
         $totalStock = 0;
         $totalAttributes = 0;
         $unnamed = 0;
+        $skus = [];
 
-        $source->read((string) $file->getRealPath())->each(function (ProductImportRow $importRow) use (&$products, &$totalProducts, &$totalVariants, &$totalStock, &$totalAttributes, &$unnamed): void {
+        $source->read((string) $file->getRealPath())->each(function (ProductImportRow $importRow) use (&$products, &$totalProducts, &$totalVariants, &$totalStock, &$totalAttributes, &$unnamed, &$skus): void {
             $row = $importRow->product;
             $variantsCount = $row->isStandard() ? 0 : count($row->variants);
 
@@ -222,8 +225,13 @@ final class ImportXlsx extends SlideOverComponent implements HasActions, HasSche
                 $unnamed++;
             }
 
+            if ($importRow->sku !== null) {
+                $skus[] = $importRow->sku;
+            }
+
             if (count($products) < self::PREVIEW_LIMIT) {
                 $products[] = [
+                    'sku' => $importRow->sku,
                     'name' => $row->name,
                     'brand' => $row->brand,
                     'price' => $row->variants[0]->price ?? null,
@@ -233,13 +241,28 @@ final class ImportXlsx extends SlideOverComponent implements HasActions, HasSche
             }
         });
 
+        $outcomes = resolve(RoutesProductImportRow::class)->outcomesFor($skus);
+        $outcomeCounts = array_count_values(array_map(
+            fn (string $sku): string => $outcomes[$sku]->value,
+            $skus,
+        ));
+
         $this->preview = [
-            'products' => $products,
+            'products' => array_map(fn (array $product): array => [
+                ...$product,
+                'outcome' => $product['sku'] === null ? null : $outcomes[$product['sku']]->value,
+            ], $products),
             'total_products' => $totalProducts,
             'total_variants' => $totalVariants,
             'total_stock' => $totalStock,
             'total_attributes' => $totalAttributes,
             'unnamed' => $unnamed,
+            'outcomes' => [
+                ProductImportRowOutcome::Updated->value => $outcomeCounts[ProductImportRowOutcome::Updated->value] ?? 0,
+                ProductImportRowOutcome::Queued->value => $outcomeCounts[ProductImportRowOutcome::Queued->value] ?? 0,
+                ProductImportRowOutcome::Skipped->value => $outcomeCounts[ProductImportRowOutcome::Skipped->value] ?? 0,
+            ],
+            'missing_sku' => $totalProducts - count($skus),
         ];
     }
 

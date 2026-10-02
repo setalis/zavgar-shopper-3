@@ -89,7 +89,11 @@ final class BuildsProductExportRows
         }
 
         return [
-            $this->row([...$productRow, 'allow_backorder' => $this->flag($product->allow_backorder)]),
+            $this->row([
+                ...$productRow,
+                'sku' => (string) $product->sku,
+                'allow_backorder' => $this->flag($product->allow_backorder),
+            ]),
             ...$product->variants->map(fn (ProductVariantContract $variant): array => $this->row([
                 'handle' => (string) $product->slug,
                 'variations' => $variant->values

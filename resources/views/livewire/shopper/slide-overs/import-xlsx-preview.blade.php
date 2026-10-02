@@ -26,6 +26,31 @@
         </li>
     </ul>
 
+    <ul class="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <li class="flex items-center gap-2 text-sm text-sh-fg-muted">
+            <x-phosphor-arrows-clockwise-duotone class="size-5 text-success-600" aria-hidden="true" />
+            <span class="font-semibold text-sh-fg">{{ $preview['outcomes'][\App\Enums\ProductImportRowOutcome::Updated->value] ?? 0 }}</span>
+            {{ __('backend.pending_products.preview.updated') }}
+        </li>
+        <li class="flex items-center gap-2 text-sm text-sh-fg-muted">
+            <x-phosphor-queue-duotone class="size-5 text-warning-600" aria-hidden="true" />
+            <span class="font-semibold text-sh-fg">{{ $preview['outcomes'][\App\Enums\ProductImportRowOutcome::Queued->value] ?? 0 }}</span>
+            {{ __('backend.pending_products.preview.queued') }}
+        </li>
+        <li class="flex items-center gap-2 text-sm text-sh-fg-muted">
+            <x-phosphor-prohibit-duotone class="size-5 text-danger-600" aria-hidden="true" />
+            <span class="font-semibold text-sh-fg">{{ $preview['outcomes'][\App\Enums\ProductImportRowOutcome::Skipped->value] ?? 0 }}</span>
+            {{ __('backend.pending_products.preview.skipped') }}
+        </li>
+    </ul>
+
+    @if (($preview['missing_sku'] ?? 0) > 0)
+        <div class="flex items-center gap-2 rounded-lg bg-danger-50 p-3 text-sm text-danger-700 dark:bg-danger-400/10 dark:text-danger-400">
+            <x-untitledui-alert-triangle class="size-4 shrink-0" aria-hidden="true" />
+            {{ trans_choice('backend.pending_products.preview.missing_sku', $preview['missing_sku'], ['count' => $preview['missing_sku']]) }}
+        </div>
+    @endif
+
     @if (($preview['unnamed'] ?? 0) > 0)
         <div class="flex items-center gap-2 rounded-lg bg-warning-50 p-3 text-sm text-warning-700 dark:bg-warning-400/10 dark:text-warning-400">
             <x-untitledui-alert-triangle class="size-4 shrink-0" aria-hidden="true" />
@@ -39,7 +64,17 @@
                 <tr>
                     <th class="fi-ta-header-cell px-3 py-2 text-start sm:first-of-type:ps-6 sm:last-of-type:pe-6">
                         <span class="fi-ta-header-cell-label text-sm font-semibold text-sh-fg">
+                            {{ __('backend.product_imports.fields.sku') }}
+                        </span>
+                    </th>
+                    <th class="fi-ta-header-cell px-3 py-2 text-start sm:first-of-type:ps-6 sm:last-of-type:pe-6">
+                        <span class="fi-ta-header-cell-label text-sm font-semibold text-sh-fg">
                             {{ __('shopper::forms.label.name') }}
+                        </span>
+                    </th>
+                    <th class="fi-ta-header-cell px-3 py-2 text-start sm:first-of-type:ps-6 sm:last-of-type:pe-6">
+                        <span class="fi-ta-header-cell-label text-sm font-semibold text-sh-fg">
+                            {{ __('backend.pending_products.preview.action') }}
                         </span>
                     </th>
                     <th class="fi-ta-header-cell px-3 py-2 text-start sm:first-of-type:ps-6 sm:last-of-type:pe-6">
@@ -69,9 +104,31 @@
                     <tr>
                         <td class="fi-ta-cell p-0 first-of-type:ps-1 last-of-type:pe-1 sm:first-of-type:ps-3 sm:last-of-type:pe-3">
                             <div class="px-3 py-2">
+                                <span class="text-sm tabular-nums text-sh-fg-muted">
+                                    {{ $product['sku'] ?? '—' }}
+                                </span>
+                            </div>
+                        </td>
+                        <td class="fi-ta-cell p-0 first-of-type:ps-1 last-of-type:pe-1 sm:first-of-type:ps-3 sm:last-of-type:pe-3">
+                            <div class="px-3 py-2">
                                 <span class="text-sm font-medium text-sh-fg">
                                     {{ $product['name'] }}
                                 </span>
+                            </div>
+                        </td>
+                        <td class="fi-ta-cell p-0 first-of-type:ps-1 last-of-type:pe-1 sm:first-of-type:ps-3 sm:last-of-type:pe-3">
+                            <div class="px-3 py-2">
+                                @php
+                                    $outcome = $product['outcome'] ?? null;
+                                    $outcomeColor = match ($outcome) {
+                                        \App\Enums\ProductImportRowOutcome::Updated->value => 'success',
+                                        \App\Enums\ProductImportRowOutcome::Queued->value => 'warning',
+                                        default => 'danger',
+                                    };
+                                @endphp
+                                <x-filament::badge :color="$outcomeColor" class="inline-flex">
+                                    {{ __('backend.pending_products.preview.outcomes.'.($outcome ?? 'missing_sku')) }}
+                                </x-filament::badge>
                             </div>
                         </td>
                         <td class="fi-ta-cell p-0 first-of-type:ps-1 last-of-type:pe-1 sm:first-of-type:ps-3 sm:last-of-type:pe-3">

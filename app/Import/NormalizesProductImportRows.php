@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Import;
 
-use App\Models\Product;
 use Illuminate\Support\LazyCollection;
 use Shopper\Core\Import\ProductRow;
 use Shopper\Core\Import\VariantRow;
@@ -23,8 +22,23 @@ final class NormalizesProductImportRows
         $enabledCurrencies = $this->enabledCurrencyCodes();
 
         return $rows->map(fn (ProductRow|ProductImportRow $row): ProductRow|ProductImportRow => $row instanceof ProductImportRow
-            ? $row->withProduct($this->product($row->product, $enabledCurrencies))
+            ? $this->importRow($row, $enabledCurrencies)
             : $this->product($row, $enabledCurrencies));
+    }
+
+    /**
+     * @param  list<string>  $enabledCurrencies
+     */
+    private function importRow(ProductImportRow $row, array $enabledCurrencies): ProductImportRow
+    {
+        return new ProductImportRow(
+            product: $this->product($row->product, $enabledCurrencies),
+            attributes: $row->attributes,
+            supplier: $row->supplier,
+            productData: $row->productData,
+            variantData: $row->variantData,
+            sku: $this->cell($row->sku),
+        );
     }
 
     /**
@@ -32,11 +46,8 @@ final class NormalizesProductImportRows
      */
     private function product(ProductRow $row, array $enabledCurrencies): ProductRow
     {
-        $handle = $this->slug($row->handle);
-        $this->restoreTrashed($handle);
-
         return new ProductRow(
-            handle: $handle,
+            handle: $this->slug($row->handle),
             name: $row->name,
             description: $row->description,
             brand: $row->brand,
@@ -52,15 +63,6 @@ final class NormalizesProductImportRows
             ),
             images: $row->images,
         );
-    }
-
-    private function restoreTrashed(string $slug): void
-    {
-        if ($slug === '') {
-            return;
-        }
-
-        Product::onlyTrashed()->where('slug', $slug)->restore();
     }
 
     /**

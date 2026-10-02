@@ -146,6 +146,7 @@ final class ParsesProductImportRows
             supplier: $this->value($first, 'supplier'),
             productData: $this->productData($first),
             variantData: $variantData,
+            sku: $this->value($first, 'variations') === null ? $this->value($first, 'sku') : null,
         );
     }
 

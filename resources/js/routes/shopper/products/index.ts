@@ -1,5 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../wayfinder'
 import edit055014 from './edit'
+import pending from './pending'
+import blacklist from './blacklist'
 /**
 * @see \Livewire\Mechanisms\HandleRouting\LivewirePageController::__invoke
  * @see vendor/livewire/livewire/src/Mechanisms/HandleRouting/LivewirePageController.php:7
@@ -432,6 +434,8 @@ edit: Object.assign(edit, edit055014),
 variant: Object.assign(variant, variant),
 importXlsxTemplate: Object.assign(importXlsxTemplate, importXlsxTemplate),
 exportXlsx: Object.assign(exportXlsx, exportXlsx),
+pending: Object.assign(pending, pending),
+blacklist: Object.assign(blacklist, blacklist),
 }
 
 export default products

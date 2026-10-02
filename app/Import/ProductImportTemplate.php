@@ -78,6 +78,7 @@ final class ProductImportTemplate
                 'featured' => '1',
                 'supplier' => 'ТОВ Текстиль',
                 'attributes' => 'Матеріал: Бавовна | Еластан; Країна виробництва: Україна',
+                'sku' => 'TS-BASE',
                 'image_url' => 'https://example.com/images/futbolka.jpg',
                 'image_alt' => 'Футболка базова',
                 'seo_title' => 'Футболка базова з бавовни',

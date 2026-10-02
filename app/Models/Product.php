@@ -16,7 +16,6 @@ use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Query\Builder as QueryBuilder;
-use Shopper\Core\Models\AttributeProduct;
 use Shopper\Core\Models\Price;
 use Shopper\Models\Product as Model;
 

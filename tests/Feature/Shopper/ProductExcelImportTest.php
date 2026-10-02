@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
+use App\Enums\PendingProductStatus;
 use App\Import\BuildsProductExportRows;
 use App\Import\ProductImportTemplate;
 use App\Import\Sources\XlsxSource;
 use App\Import\StartProductImport;
+use App\Jobs\CreatePendingProductsJob;
 use App\Livewire\Shopper\SlideOvers\ImportXlsx;
+use App\Models\PendingProduct;
 use App\Models\Product;
 use App\Models\User;
 use App\Support\WritesSpreadsheet;
@@ -93,6 +96,25 @@ function createXlsxProductImport(string $relativePath, int $userId): ProductImpo
     ]);
 }
 
+function createQueuedProducts(): void
+{
+    $ids = PendingProduct::query()->pluck('id')->all();
+
+    PendingProduct::query()->update(['status' => PendingProductStatus::Processing]);
+
+    CreatePendingProductsJob::dispatchSync($ids);
+}
+
+function importXlsxAndCreateQueuedProducts(string $relativePath, int $userId): ProductImport
+{
+    $import = createXlsxProductImport($relativePath, $userId);
+
+    resolve(StartProductImport::class)->execute($import);
+    createQueuedProducts();
+
+    return $import->refresh();
+}
+
 /**
  * @return array<string, list<string>>
  */
@@ -116,7 +138,7 @@ test('excel is available as a product import source', function (): void {
         ->and($sources['xlsx']->name())->toBe(__('backend.product_imports.sources.xlsx.name'));
 });
 
-test('it imports a standard product from an excel workbook', function (): void {
+test('a new standard product is queued and created from the queue', function (): void {
     $relativePath = writeProductImportXlsx('linen-shirt.xlsx', [
         ['handle', 'name', 'sku'],
         ['linen-shirt', 'Linen Shirt', 'SHIRT-1'],
@@ -137,16 +159,22 @@ test('it imports a standard product from an excel workbook', function (): void {
 
     resolve(StartProductImport::class)->execute($import);
 
+    $import->refresh();
+
+    expect(Product::query()->where('sku', 'SHIRT-1')->exists())->toBeFalse()
+        ->and(PendingProduct::query()->where('sku', 'SHIRT-1')->value('name'))->toBe('Linen Shirt')
+        ->and($import->status)->toBe(ImportStatus::Completed)
+        ->and($import->imported_count)->toBe(0)
+        ->and($import->queued_count)->toBe(1);
+
+    createQueuedProducts();
+
     $product = Product::query()->where('slug', 'linen-shirt')->first();
 
     expect($product)->not->toBeNull()
         ->and($product->name)->toBe('Linen Shirt')
-        ->and($product->sku)->toBe('SHIRT-1');
-
-    $import->refresh();
-
-    expect($import->status)->toBe(ImportStatus::Completed)
-        ->and($import->imported_count)->toBe(1);
+        ->and($product->sku)->toBe('SHIRT-1')
+        ->and(PendingProduct::query()->count())->toBe(0);
 });
 
 test('it reads mapped excel columns through the xlsx source', function (): void {
@@ -197,19 +225,18 @@ test('it keeps variant rows that omit the product handle', function (): void {
 test('it separates the product row from its variation rows', function (): void {
     $relativePath = writeProductImportXlsx('variable.xlsx', [
         ['handle', 'name', 'attributes', 'variations', 'sku', 'price', 'quantity'],
-        ['basic-tee', 'Basic Tee', 'Material: Cotton; Country: Ukraine', '', '', '', ''],
+        ['basic-tee', 'Basic Tee', 'Material: Cotton; Country: Ukraine', '', 'TS-BASE', '', ''],
         ['', '', '', 'Size: M; Color: Blue', 'TS-M-BLUE', '499', '10'],
         ['', '', '', 'Size: L; Color: Red', 'TS-L-RED', '529,50', '5'],
     ]);
 
-    $import = createXlsxProductImport($relativePath, $this->admin->id);
-
-    resolve(StartProductImport::class)->execute($import);
+    importXlsxAndCreateQueuedProducts($relativePath, $this->admin->id);
 
     $product = Product::query()->where('slug', 'basic-tee')->firstOrFail();
     $variants = $product->variants()->with('values.attribute')->orderBy('position')->get();
 
     expect($product->type)->toBe(ProductType::Variant)
+        ->and($product->sku)->toBe('TS-BASE')
         ->and($variants)->toHaveCount(2)
         ->and($variants->pluck('sku')->all())->toBe(['TS-M-BLUE', 'TS-L-RED'])
         ->and($variants[1]->values->pluck('value', 'attribute.name')->all())->toBe(['Size' => 'L', 'Color' => 'Red'])
@@ -233,7 +260,7 @@ test('it imports product attributes respecting existing attribute types', functi
         ['classic-perfume', 'Classic Perfume', 'PF-50', 'Volume: 50 ml; Notes: Cedar | Citrus; Origin: France'],
     ]);
 
-    resolve(StartProductImport::class)->execute(createXlsxProductImport($relativePath, $this->admin->id));
+    importXlsxAndCreateQueuedProducts($relativePath, $this->admin->id);
 
     $product = Product::query()->where('slug', 'classic-perfume')->firstOrFail();
 
@@ -253,7 +280,7 @@ test('reimporting replaces only the attributes listed in the file', function ():
         ['handle', 'name', 'sku', 'attributes'],
         ['classic-perfume', 'Classic Perfume', 'PF-50', 'Origin: France; Notes: Cedar'],
     ]);
-    resolve(StartProductImport::class)->execute(createXlsxProductImport($first, $this->admin->id));
+    importXlsxAndCreateQueuedProducts($first, $this->admin->id);
 
     $second = writeProductImportXlsx('attributes-second.xlsx', [
         ['handle', 'name', 'sku', 'attributes'],
@@ -272,18 +299,16 @@ test('reimporting replaces only the attributes listed in the file', function ():
 test('it imports the extra product and variant fields', function (): void {
     $relativePath = writeProductImportXlsx('extras.xlsx', [
         ['handle', 'name', 'featured', 'supplier', 'allow_backorder', 'variations', 'sku', 'width_value', 'height_value', 'depth_value', 'length_unit'],
-        ['canvas-bag', 'Canvas Bag', 'так', 'Textile LLC', '1', '', '', '30', '40', '10', 'cm'],
+        ['canvas-bag', 'Canvas Bag', 'так', 'Textile LLC', '1', '', 'BAG', '30', '40', '10', 'cm'],
         ['', '', '', '', '1', 'Color: Black', 'BAG-BLACK', '31', '41', '11', 'mm'],
     ]);
 
-    $import = createXlsxProductImport($relativePath, $this->admin->id);
-
-    resolve(StartProductImport::class)->execute($import);
+    $import = importXlsxAndCreateQueuedProducts($relativePath, $this->admin->id);
 
     $product = Product::query()->where('slug', 'canvas-bag')->firstOrFail();
     $variant = $product->variants()->where('sku', 'BAG-BLACK')->firstOrFail();
 
-    expect($import->refresh()->errors ?? [])->toBe([])
+    expect($import->errors ?? [])->toBe([])
         ->and($product->featured)->toBeTrue()
         ->and($product->allow_backorder)->toBeTrue()
         ->and($product->supplier?->name)->toBe('Textile LLC')
@@ -299,16 +324,15 @@ test('the downloadable template imports without errors', function (): void {
 
     $relativePath = writeProductImportXlsx('template.xlsx', resolve(ProductImportTemplate::class)->rows());
 
-    $import = createXlsxProductImport($relativePath, $this->admin->id);
+    $import = importXlsxAndCreateQueuedProducts($relativePath, $this->admin->id);
 
-    resolve(StartProductImport::class)->execute($import);
-
-    $import->refresh();
     $tShirt = Product::query()->where('slug', 'futbolka-bazova')->firstOrFail();
 
     expect($import->errors ?? [])->toBe([])
         ->and($import->status)->toBe(ImportStatus::Completed)
-        ->and($import->imported_count)->toBe(2)
+        ->and($import->queued_count)->toBe(2)
+        ->and(PendingProduct::query()->count())->toBe(0)
+        ->and($tShirt->sku)->toBe('TS-BASE')
         ->and($tShirt->variants()->count())->toBe(3)
         ->and(productAttributeValues($tShirt))->toBe([
             'Країна виробництва' => ['Україна'],
@@ -317,7 +341,7 @@ test('the downloadable template imports without errors', function (): void {
         ->and(Product::query()->where('slug', 'parfum-klasychnyi')->value('type'))->toBe(ProductType::Standard);
 });
 
-test('it restores a soft-deleted product and makes it visible again', function (): void {
+test('it restores a soft-deleted product found by sku and makes it visible again', function (): void {
     $currency = Currency::query()->create([
         'name' => 'Hryvnia',
         'code' => 'UAH',
@@ -336,6 +360,7 @@ test('it restores a soft-deleted product and makes it visible again', function (
     $product = Product::factory()->standard()->create([
         'name' => 'Old Oil',
         'slug' => 'wave-oil',
+        'sku' => '7245/01',
     ]);
     $product->delete();
 
@@ -362,6 +387,7 @@ test('it restores a soft-deleted product and makes it visible again', function (
     $product = Product::query()->where('slug', 'wave-oil')->first();
 
     expect($product)->not->toBeNull()
+        ->and(PendingProduct::query()->count())->toBe(0)
         ->and($product->trashed())->toBeFalse()
         ->and($product->name)->toBe('Wave Oil')
         ->and($product->isPublished())->toBeTrue()
@@ -411,6 +437,7 @@ test('it prices products in the store currency when the file uses a disabled cur
     ]);
 
     resolve(StartProductImport::class)->execute($import);
+    createQueuedProducts();
 
     $product = Product::query()->where('slug', 'classic-perfume')->first();
 
@@ -457,9 +484,8 @@ test('admins can import products from an uploaded excel file', function (): void
         ->call('store')
         ->assertHasNoErrors();
 
-    expect(Product::query()->where('slug', 'canvas-bag')->first())
-        ->not->toBeNull()
-        ->and(Product::query()->where('slug', 'canvas-bag')->value('name'))->toBe('Canvas Bag')
+    expect(Product::query()->where('slug', 'canvas-bag')->exists())->toBeFalse()
+        ->and(PendingProduct::query()->where('sku', 'BAG-1')->value('name'))->toBe('Canvas Bag')
         ->and(ProductImport::query()->where('source', 'xlsx')->exists())->toBeTrue();
 });
 
@@ -499,7 +525,7 @@ test('exported products can be imported back without changes', function (): void
     Inventory::factory()->create(['is_default' => true]);
 
     $template = writeProductImportXlsx('round-trip-source.xlsx', resolve(ProductImportTemplate::class)->rows());
-    resolve(StartProductImport::class)->execute(createXlsxProductImport($template, $this->admin->id));
+    importXlsxAndCreateQueuedProducts($template, $this->admin->id);
 
     $rows = iterator_to_array(resolve(BuildsProductExportRows::class)->handle(), false);
     $exported = collect($rows)->skip(1)->map(fn (array $row): array => array_combine(ProductImportTemplate::COLUMNS, $row))->values();
@@ -514,7 +540,7 @@ test('exported products can be imported back without changes', function (): void
             'supplier' => 'ТОВ Текстиль',
             'attributes' => 'Матеріал: Бавовна | Еластан; Країна виробництва: Україна',
             'variations' => '',
-            'sku' => '',
+            'sku' => 'TS-BASE',
         ])
         ->and($exported[1])->toMatchArray([
             'handle' => 'futbolka-bazova',
@@ -540,7 +566,12 @@ test('exported products can be imported back without changes', function (): void
 
     $tShirt = Product::query()->where('slug', 'futbolka-bazova')->firstOrFail();
 
-    expect($import->refresh()->errors ?? [])->toBe([])
+    $import->refresh();
+
+    expect($import->errors ?? [])->toBe([])
+        ->and($import->imported_count)->toBe(2)
+        ->and($import->queued_count)->toBe(0)
+        ->and(PendingProduct::query()->count())->toBe(0)
         ->and(Product::query()->count())->toBe(2)
         ->and($tShirt->variants()->count())->toBe(3)
         ->and($tShirt->variants()->where('sku', 'TS-M-BLUE')->firstOrFail()->getStock())->toBe(10)

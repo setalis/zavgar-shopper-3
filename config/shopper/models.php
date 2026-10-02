@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\AttributeProduct;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Channel;
@@ -14,7 +15,6 @@ use Shopper\Core\Models\Order;
 use Shopper\Core\Models\Supplier;
 use Shopper\Core\Models\TaxRate;
 use Shopper\Core\Models\TaxZone;
-use Shopper\Models;
 
 return [
 
@@ -108,7 +108,7 @@ return [
     |
     */
 
-    'attribute_product' => Models\AttributeProduct::class,
+    'attribute_product' => AttributeProduct::class,
 
     /*
     |--------------------------------------------------------------------------

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Import;
 
+use App\Models\AttributeProduct;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Shopper\Core\Enum\FieldType;
 use Shopper\Core\Import\ProductRowImporter;
 use Shopper\Core\Models\Attribute;
-use Shopper\Core\Models\AttributeProduct;
 use Shopper\Core\Models\AttributeValue;
 use Shopper\Core\Models\Contracts\Product as ProductContract;
 
@@ -46,6 +46,10 @@ final class ImportsProductRow
 
         if ($row->supplier !== null) {
             $data['supplier_id'] = $this->resolveSupplierId($row->supplier);
+        }
+
+        if ($row->sku !== null && ! $row->product->isStandard()) {
+            $data['sku'] = $row->sku;
         }
 
         if ($data !== []) {
@@ -95,15 +99,19 @@ final class ImportsProductRow
                     'is_enabled' => true,
                 ]);
 
+            $isVariantOption = AttributeProduct::isVariantOption($product->id, $attribute->id)
+                || AttributeProduct::isUsedByVariants($product->id, $attribute->id);
+
             AttributeProduct::query()
                 ->where('product_id', $product->id)
                 ->where('attribute_id', $attribute->id)
                 ->delete();
 
             foreach ($this->attributeProductRows($attribute, $values) as $row) {
-                AttributeProduct::query()->create([
+                AttributeProduct::create([
                     'product_id' => $product->id,
                     'attribute_id' => $attribute->id,
+                    'is_variant_option' => $isVariantOption,
                     ...$row,
                 ]);
             }

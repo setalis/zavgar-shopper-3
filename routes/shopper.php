@@ -4,18 +4,24 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Shopper\DownloadProductImportXlsxTemplateController;
 use App\Http\Controllers\Shopper\ExportProductsXlsxController;
+use App\Livewire\Shopper\Pages\BlacklistedProducts\Index as BlacklistedProductsIndex;
 use App\Livewire\Shopper\Pages\HomepageBanners\Edit as HomepageBannerEdit;
 use App\Livewire\Shopper\Pages\HomepageBanners\Index as HomepageBannersIndex;
 use App\Livewire\Shopper\Pages\MenuItems\Edit as MenuItemEdit;
 use App\Livewire\Shopper\Pages\MenuItems\Index as MenuItemsIndex;
 use App\Livewire\Shopper\Pages\News\Edit as NewsArticleEdit;
 use App\Livewire\Shopper\Pages\News\Index as NewsArticlesIndex;
+use App\Livewire\Shopper\Pages\PendingProducts\Index as PendingProductsIndex;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/products/import-template.xlsx', DownloadProductImportXlsxTemplateController::class)
     ->name('products.import-xlsx-template');
 Route::get('/products/export.xlsx', ExportProductsXlsxController::class)
     ->name('products.export-xlsx');
+Route::get('/products/pending', PendingProductsIndex::class)
+    ->name('products.pending.index');
+Route::get('/products/blacklist', BlacklistedProductsIndex::class)
+    ->name('products.blacklist.index');
 
 Route::get('/banners', HomepageBannersIndex::class)
     ->name('banners.index');
