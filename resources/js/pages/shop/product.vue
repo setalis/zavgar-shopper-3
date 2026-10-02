@@ -9,7 +9,7 @@ import {
     Star,
     Truck,
 } from 'lucide-vue-next';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import HreflangLinks from '@/components/shop/hreflang-links.vue';
 import InputError from '@/components/input-error.vue';
 import BrandLink from '@/components/shop/brand-link.vue';
@@ -94,16 +94,57 @@ const { currency, taxLabel } = useShop();
 const { money } = useFormat();
 
 const selectedOptions = ref<Record<number, number>>({});
+const manualVariantId = ref<number | null>(null);
 const quantity = ref<number>(1);
 const adding = ref<boolean>(false);
 const manualImage = ref<string | null>(null);
 
-const hasVariants = computed<boolean>(() =>
+const hasStructuredVariants = computed<boolean>(() =>
     Boolean(props.variantOptions?.hasStructuredAttributes),
 );
 
+const unstructuredVariants = computed(() => {
+    if (hasStructuredVariants.value) {
+        return [];
+    }
+
+    return props.product.variants ?? [];
+});
+
+const hasVariants = computed<boolean>(
+    () =>
+        hasStructuredVariants.value || unstructuredVariants.value.length > 0,
+);
+
+watch(
+    unstructuredVariants,
+    (variants) => {
+        if (variants.length === 1) {
+            manualVariantId.value = variants[0]?.id ?? null;
+
+            return;
+        }
+
+        if (
+            manualVariantId.value !== null &&
+            !variants.some((variant) => variant.id === manualVariantId.value)
+        ) {
+            manualVariantId.value = null;
+        }
+    },
+    { immediate: true },
+);
+
 const selectedVariantId = computed<number | null>(() => {
-    if (!props.variantOptions || !hasVariants.value) {
+    if (!hasVariants.value) {
+        return null;
+    }
+
+    if (!hasStructuredVariants.value) {
+        return manualVariantId.value;
+    }
+
+    if (!props.variantOptions) {
         return null;
     }
 
@@ -127,6 +168,29 @@ const selectedVariant = computed(() =>
           ) ?? null)
         : null,
 );
+
+function selectUnstructuredVariant(value: string): void {
+    if (value === '') {
+        return;
+    }
+
+    manualImage.value = null;
+    manualVariantId.value = Number(value);
+}
+
+function unstructuredVariantLabel(variant: ProductVariant): string {
+    const volume = Number(variant.volume_value);
+    if (volume > 0) {
+        return `${volume} ${variant.volume_unit ?? ''}`.trim();
+    }
+
+    const weight = Number(variant.weight_value);
+    if (weight > 0) {
+        return `${weight} ${variant.weight_unit ?? ''}`.trim();
+    }
+
+    return variant.name;
+}
 
 function mediaFileKey(url: string): string {
     const path = url.split('?')[0] ?? url;
@@ -213,14 +277,18 @@ function selectOption(optionId: number, valueId: string): void {
 }
 
 const displayPrice = computed<StorefrontPrice | null>(() => {
-    const selected = selectedVariant.value?.prices?.[0];
+    if (selectedVariant.value) {
+        const selected = selectedVariant.value.prices?.[0];
 
-    if (selected?.amount != null) {
-        return {
-            amount: selected.amount,
-            compare_amount: selected.compare_amount ?? null,
-            from: false,
-        };
+        if (selected?.amount != null) {
+            return {
+                amount: selected.amount,
+                compare_amount: selected.compare_amount ?? null,
+                from: false,
+            };
+        }
+
+        return null;
     }
 
     return props.product.storefront_price ?? null;
@@ -369,7 +437,11 @@ const features = computed(() => [
 ]);
 
 function addToCart(): void {
-    if (adding.value || outOfStock.value) {
+    if (adding.value || outOfStock.value || !displayPrice.value) {
+        return;
+    }
+
+    if (hasVariants.value && !selectedVariantId.value) {
         return;
     }
 
@@ -516,7 +588,12 @@ function submitReview(): void {
                         <span
                             class="font-heading text-2xl font-extrabold text-ink md:text-3xl"
                         >
-                            {{ money(displayPrice.amount, currency) }}
+                            {{
+                                (displayPrice.from
+                                    ? `${t('shop.price.from')} `
+                                    : '') +
+                                money(displayPrice.amount, currency)
+                            }}
                         </span>
                         <span
                             v-if="savedAmount"
@@ -573,7 +650,7 @@ function submitReview(): void {
                     }}
                 </span>
 
-                <div v-if="hasVariants && variantOptions" class="space-y-5">
+                <div v-if="hasStructuredVariants && variantOptions" class="space-y-5">
                     <div
                         v-for="option in variantOptions.productOptions"
                         :key="option.id"
@@ -631,10 +708,53 @@ function submitReview(): void {
                     </div>
                 </div>
 
+                <div
+                    v-else-if="unstructuredVariants.length"
+                    class="space-y-5"
+                >
+                    <div>
+                        <p
+                            class="mb-3 font-mono text-xs tracking-[0.08em] text-ink-mute uppercase"
+                        >
+                            {{ t('shop.product.choose_options') }}
+                        </p>
+
+                        <ToggleGroup
+                            type="single"
+                            :model-value="manualVariantId?.toString() ?? ''"
+                            class="flex-wrap justify-start gap-2"
+                            :aria-label="t('shop.product.choose_options')"
+                            @update:model-value="
+                                (value) =>
+                                    selectUnstructuredVariant(
+                                        String(value ?? ''),
+                                    )
+                            "
+                        >
+                            <ToggleGroupItem
+                                v-for="variant in unstructuredVariants"
+                                :key="variant.id"
+                                :value="variant.id.toString()"
+                                :disabled="
+                                    variant.stock <= 0 &&
+                                    !variant.allow_backorder
+                                "
+                                class="h-auto rounded-sm border border-rule-strong px-4 py-2.5 text-sm font-semibold data-[state=on]:border-brand data-[state=on]:bg-primary data-[state=on]:text-paper"
+                                :title="variant.name"
+                            >
+                                {{ unstructuredVariantLabel(variant) }}
+                            </ToggleGroupItem>
+                        </ToggleGroup>
+                    </div>
+                </div>
+
                 <div class="mt-4 flex flex-wrap items-center gap-3">
                     <QtyStepper
                         v-model="quantity"
-                        :disabled="outOfStock"
+                        :disabled="
+                            outOfStock ||
+                            (Boolean(selectedVariantId) && !displayPrice)
+                        "
                         :max="20"
                     />
 
@@ -645,6 +765,7 @@ function submitReview(): void {
                         :disabled="
                             adding ||
                             outOfStock ||
+                            !displayPrice ||
                             (hasVariants && !selectedVariantId)
                         "
                         @click="addToCart"

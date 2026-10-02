@@ -307,8 +307,26 @@
     }
 }
 
+@keyframes brand-marquee {
+    from {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(-50%);
+    }
+}
+
+@utility animate-brand-marquee {
+    animation: brand-marquee 40s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
     html {
         scroll-behavior: auto;
+    }
+
+    .animate-brand-marquee {
+        animation: none;
     }
 }

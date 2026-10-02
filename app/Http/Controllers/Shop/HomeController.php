@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Shop;
 
 use App\Enums\HomepageBannerPlacement;
 use App\Http\Controllers\Controller;
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Collection;
 use App\Models\HomepageBanner;
@@ -64,6 +65,11 @@ final class HomeController extends Controller
                     ->limit(10)
                     ->get(),
             )),
+            'brands' => fn () => Brand::query()
+                ->scopes('enabled')
+                ->orderBy('position')
+                ->orderBy('name')
+                ->get(['id', 'name', 'slug']),
         ]);
     }
 

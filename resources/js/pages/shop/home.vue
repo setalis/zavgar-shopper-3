@@ -15,7 +15,13 @@ import TrustBadges from '@/components/shop/trust-badges.vue';
 import { useLocalizedRoute } from '@/composables/useLocalizedRoute';
 import { useTrans } from '@/composables/useTrans';
 import * as shop from '@/routes/shop';
-import type { Category, Collection, HomepageBanner, Product } from '@/types/shop';
+import type {
+    Brand,
+    Category,
+    Collection,
+    HomepageBanner,
+    Product,
+} from '@/types/shop';
 
 const props = defineProps<{
     bentoBanners: HomepageBanner[];
@@ -24,6 +30,7 @@ const props = defineProps<{
     latestProducts: Product[];
     featuredCollections: Collection[];
     categories: Category[];
+    brands: Pick<Brand, 'id' | 'name' | 'slug'>[];
 }>();
 
 const { t } = useTrans();
@@ -158,7 +165,7 @@ const compactProducts = computed<Product[]>(() =>
         </Container>
     </section>
 
-    <BrandStrip />
+    <BrandStrip v-if="brands.length" :brands="brands" />
 
     <NewsletterBanner />
 
