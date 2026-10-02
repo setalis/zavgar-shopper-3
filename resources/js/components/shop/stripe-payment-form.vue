@@ -15,7 +15,7 @@ const props = defineProps<{
 }>();
 
 const mount = ref<HTMLElement | null>(null);
-const { currency, taxLabel } = useShop();
+const { currency } = useShop();
 const { t } = useTrans();
 
 const { submitting, error, confirm } = useStripeElements(
@@ -41,7 +41,7 @@ async function pay(): Promise<void> {
             <div class="flex flex-wrap items-center justify-between gap-4">
                 <div v-if="total !== undefined" class="flex flex-col">
                     <span class="font-mono text-xs text-ink-mute">
-                        {{ t('shop.stripe.total') }} {{ taxLabel }}
+                        {{ t('shop.stripe.total') }}
                     </span>
                     <span class="font-heading text-xl font-extrabold text-ink">
                         {{ formatMoney(total, currency) }}

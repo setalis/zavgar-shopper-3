@@ -200,22 +200,6 @@ function formatDate(value: string): string {
                             }}
                         </dd>
                     </div>
-                    <div
-                        v-if="(order.tax_amount ?? 0) > 0"
-                        class="flex justify-between"
-                    >
-                        <dt class="text-ink-mute">
-                            {{ t('account.order_show.summary.tax') }}
-                        </dt>
-                        <dd class="text-ink">
-                            {{
-                                formatMoney(
-                                    order.tax_amount!,
-                                    order.currency_code,
-                                )
-                            }}
-                        </dd>
-                    </div>
                     <div class="flex justify-between border-t border-rule pt-2">
                         <dt class="font-semibold text-ink">
                             {{ t('account.order_show.summary.total') }}

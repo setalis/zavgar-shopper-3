@@ -90,7 +90,7 @@ const cart = useCart();
 const { has, toggle } = useWishlist();
 const { t } = useTrans();
 const { localized } = useLocalizedRoute();
-const { currency, taxLabel } = useShop();
+const { currency } = useShop();
 const { money } = useFormat();
 
 const selectedOptions = ref<Record<number, number>>({});
@@ -615,12 +615,6 @@ function submitReview(): void {
                                     amount: money(savedAmount, currency),
                                 })
                             }}
-                        </span>
-                        <span
-                            v-if="taxLabel"
-                            class="font-mono text-[11px] text-ink-mute"
-                        >
-                            {{ taxLabel }}
                         </span>
                     </template>
                     <span v-else class="font-heading text-xl text-ink-mute">

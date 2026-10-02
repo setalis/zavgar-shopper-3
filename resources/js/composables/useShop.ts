@@ -21,7 +21,6 @@ export function useShop() {
     const currentZone = computed(() => shop.value.zone);
     const channels = computed(() => shop.value.channels);
     const availableZones = computed(() => shop.value.available_zones);
-    const taxLabel = computed<string>(() => shop.value.tax_label);
 
     function changeZone(countryCode: string): void {
         router.patch(
@@ -40,7 +39,6 @@ export function useShop() {
         zone: currentZone,
         channels,
         availableZones,
-        taxLabel,
         changeZone,
     };
 }

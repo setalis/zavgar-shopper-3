@@ -24,7 +24,7 @@ defineProps<{
 }>();
 
 const page = usePage();
-const { currency, taxLabel } = useShop();
+const { currency } = useShop();
 const cartActions = useCart();
 const { t } = useTrans();
 const { localized } = useLocalizedRoute();
@@ -245,20 +245,6 @@ function confirmClear(): void {
                         <div
                             class="flex items-center justify-between border-b border-rule pb-3"
                         >
-                            <dt>{{ t('shop.cart.tax') }}</dt>
-                            <dd class="font-heading font-semibold text-ink">
-                                {{
-                                    formatMoney(
-                                        cartContext?.taxTotal ?? 0,
-                                        currency,
-                                    )
-                                }}
-                            </dd>
-                        </div>
-
-                        <div
-                            class="flex items-center justify-between border-b border-rule pb-3"
-                        >
                             <dt>{{ t('shop.cart.delivery') }}</dt>
                             <dd>{{ t('shop.cart.delivery_calculated') }}</dd>
                         </div>
@@ -280,7 +266,7 @@ function confirmClear(): void {
 
                         <div class="flex items-center justify-between pt-1">
                             <dt class="font-heading text-md font-bold text-ink">
-                                {{ t('shop.cart.subtotal') }} {{ taxLabel }}
+                                {{ t('shop.cart.subtotal') }}
                             </dt>
                             <dd
                                 class="font-heading text-xl font-extrabold text-ink"

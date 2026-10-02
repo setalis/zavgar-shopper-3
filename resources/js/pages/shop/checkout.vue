@@ -52,7 +52,7 @@ const props = defineProps<{
     } | null;
 }>();
 
-const { currency, taxLabel, zone } = useShop();
+const { currency, zone } = useShop();
 const { t } = useTrans();
 const { localized } = useLocalizedRoute();
 
@@ -696,7 +696,6 @@ function lineName(line: Cart['lines'][number]): string {
                                             class="font-mono text-xs text-ink-mute"
                                         >
                                             {{ t('shop.checkout.total') }}
-                                            {{ taxLabel }}
                                         </span>
                                         <span
                                             class="font-heading text-xl font-extrabold text-ink"
@@ -806,20 +805,6 @@ function lineName(line: Cart['lines'][number]): string {
                         <div
                             class="flex items-center justify-between border-b border-rule pb-3"
                         >
-                            <dt>{{ t('shop.checkout.tax') }}</dt>
-                            <dd class="font-heading font-semibold text-ink">
-                                {{
-                                    formatMoney(
-                                        cartContext?.taxTotal ?? 0,
-                                        currency,
-                                    )
-                                }}
-                            </dd>
-                        </div>
-
-                        <div
-                            class="flex items-center justify-between border-b border-rule pb-3"
-                        >
                             <dt>{{ t('shop.checkout.delivery') }}</dt>
                             <dd class="font-heading font-semibold text-ink">
                                 <template v-if="selectedDelivery">
@@ -855,7 +840,7 @@ function lineName(line: Cart['lines'][number]): string {
 
                         <div class="flex items-center justify-between pt-1">
                             <dt class="font-heading text-md font-bold text-ink">
-                                {{ t('shop.checkout.total') }} {{ taxLabel }}
+                                {{ t('shop.checkout.total') }}
                             </dt>
                             <dd
                                 class="font-heading text-xl font-extrabold text-ink"

@@ -16,7 +16,7 @@ const props = withDefaults(
     { size: 'sm', showSaveBadge: false },
 );
 
-const { currency, taxLabel } = useShop();
+const { currency } = useShop();
 const { t } = useTrans();
 const { money } = useFormat();
 
@@ -94,10 +94,6 @@ const saved = computed<number | null>(() => {
             class="inline-flex items-center rounded-sm bg-rose/10 px-2 py-0.5 font-mono text-[11px] font-semibold text-rose"
         >
             -{{ percentage }}%
-        </span>
-
-        <span v-if="taxLabel" class="font-mono text-[11px] text-ink-mute">
-            {{ taxLabel }}
         </span>
     </div>
     <p v-else class="font-heading font-bold text-ink-mute">

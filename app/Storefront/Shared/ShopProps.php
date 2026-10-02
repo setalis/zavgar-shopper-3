@@ -47,7 +47,6 @@ final readonly class ShopProps
                 ->get()
                 ->toArray(),
             'available_zones' => fn (): array => resolve(GetCountriesByZone::class)->handle()->values()->toArray(),
-            'tax_label' => current_tax_label(),
             'logo' => storefront_logo_url(),
             'nav_categories' => $this->navCategories(),
             'nav_menu' => $this->navMenu(),

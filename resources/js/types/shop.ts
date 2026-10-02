@@ -227,7 +227,6 @@ export type ShopSharedProps = {
     currency: string;
     channels: Channel[];
     available_zones: CountryByZoneData[];
-    tax_label: string;
     logo: string | null;
     nav_categories: NavCategory[];
     nav_menu: NavMenuItem[];
