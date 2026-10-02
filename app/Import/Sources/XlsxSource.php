@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Import\Sources;
 
 use App\Import\NormalizesProductImportRows;
+use App\Import\ParsesProductImportRows;
+use App\Import\ProductImportRow;
 use App\Support\ConvertsSpreadsheetToCsv;
 use Illuminate\Support\LazyCollection;
 use Shopper\Core\Import\Contracts\ImportSource;
@@ -16,6 +18,7 @@ final class XlsxSource implements ImportSource, SupportsColumnMapping
     public function __construct(
         private ConvertsSpreadsheetToCsv $converter,
         private CsvSource $csv,
+        private ParsesProductImportRows $parser,
         private NormalizesProductImportRows $normalizes,
     ) {}
 
@@ -61,18 +64,21 @@ final class XlsxSource implements ImportSource, SupportsColumnMapping
     public function withMapping(array $mapping): static
     {
         $clone = clone $this;
-        $clone->csv = $this->csv->withMapping($mapping);
+        $clone->parser = $this->parser->withMapping($mapping);
 
         return $clone;
     }
 
+    /**
+     * @return LazyCollection<int, ProductImportRow>
+     */
     public function read(string $path): LazyCollection
     {
         $csvPath = $this->converter->toTempPath($path);
 
         return LazyCollection::make(function () use ($csvPath) {
             try {
-                foreach ($this->normalizes->handle($this->csv->read($csvPath)) as $row) {
+                foreach ($this->normalizes->handle($this->parser->read($csvPath)) as $row) {
                     yield $row;
                 }
             } finally {

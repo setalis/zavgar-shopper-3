@@ -13,35 +13,45 @@ use Shopper\Core\Models\Currency;
 final class NormalizesProductImportRows
 {
     /**
-     * @param  LazyCollection<int, ProductRow>  $rows
-     * @return LazyCollection<int, ProductRow>
+     * @template TRow of ProductRow|ProductImportRow
+     *
+     * @param  LazyCollection<int, TRow>  $rows
+     * @return LazyCollection<int, TRow>
      */
     public function handle(LazyCollection $rows): LazyCollection
     {
         $enabledCurrencies = $this->enabledCurrencyCodes();
 
-        return $rows->map(function (ProductRow $row) use ($enabledCurrencies): ProductRow {
-            $handle = $this->slug($row->handle);
-            $this->restoreTrashed($handle);
+        return $rows->map(fn (ProductRow|ProductImportRow $row): ProductRow|ProductImportRow => $row instanceof ProductImportRow
+            ? $row->withProduct($this->product($row->product, $enabledCurrencies))
+            : $this->product($row, $enabledCurrencies));
+    }
 
-            return new ProductRow(
-                handle: $handle,
-                name: $row->name,
-                description: $row->description,
-                brand: $row->brand,
-                categories: $row->categories,
-                tags: $row->tags,
-                published: $row->published,
-                seoTitle: $row->seoTitle,
-                seoDescription: $row->seoDescription,
-                optionNames: $row->optionNames,
-                variants: array_map(
-                    fn (VariantRow $variant): VariantRow => $this->variant($variant, $enabledCurrencies),
-                    $row->variants,
-                ),
-                images: $row->images,
-            );
-        });
+    /**
+     * @param  list<string>  $enabledCurrencies
+     */
+    private function product(ProductRow $row, array $enabledCurrencies): ProductRow
+    {
+        $handle = $this->slug($row->handle);
+        $this->restoreTrashed($handle);
+
+        return new ProductRow(
+            handle: $handle,
+            name: $row->name,
+            description: $row->description,
+            brand: $row->brand,
+            categories: $row->categories,
+            tags: $row->tags,
+            published: $row->published,
+            seoTitle: $row->seoTitle,
+            seoDescription: $row->seoDescription,
+            optionNames: $row->optionNames,
+            variants: array_map(
+                fn (VariantRow $variant): VariantRow => $this->variant($variant, $enabledCurrencies),
+                $row->variants,
+            ),
+            images: $row->images,
+        );
     }
 
     private function restoreTrashed(string $slug): void

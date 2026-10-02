@@ -348,11 +348,90 @@ importXlsxTemplate.head = (options?: RouteQueryOptions): RouteDefinition<'head'>
         })
     
     importXlsxTemplate.form = importXlsxTemplateForm
+/**
+* @see \App\Http\Controllers\Shopper\ExportProductsXlsxController::__invoke
+ * @see app/Http/Controllers/Shopper/ExportProductsXlsxController.php:15
+ * @route '/cpanel/products/export.xlsx'
+ */
+export const exportXlsx = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: exportXlsx.url(options),
+    method: 'get',
+})
+
+exportXlsx.definition = {
+    methods: ["get","head"],
+    url: '/cpanel/products/export.xlsx',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\Shopper\ExportProductsXlsxController::__invoke
+ * @see app/Http/Controllers/Shopper/ExportProductsXlsxController.php:15
+ * @route '/cpanel/products/export.xlsx'
+ */
+exportXlsx.url = (options?: RouteQueryOptions) => {
+    return exportXlsx.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Shopper\ExportProductsXlsxController::__invoke
+ * @see app/Http/Controllers/Shopper/ExportProductsXlsxController.php:15
+ * @route '/cpanel/products/export.xlsx'
+ */
+exportXlsx.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: exportXlsx.url(options),
+    method: 'get',
+})
+/**
+* @see \App\Http\Controllers\Shopper\ExportProductsXlsxController::__invoke
+ * @see app/Http/Controllers/Shopper/ExportProductsXlsxController.php:15
+ * @route '/cpanel/products/export.xlsx'
+ */
+exportXlsx.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: exportXlsx.url(options),
+    method: 'head',
+})
+
+    /**
+* @see \App\Http\Controllers\Shopper\ExportProductsXlsxController::__invoke
+ * @see app/Http/Controllers/Shopper/ExportProductsXlsxController.php:15
+ * @route '/cpanel/products/export.xlsx'
+ */
+    const exportXlsxForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+        action: exportXlsx.url(options),
+        method: 'get',
+    })
+
+            /**
+* @see \App\Http\Controllers\Shopper\ExportProductsXlsxController::__invoke
+ * @see app/Http/Controllers/Shopper/ExportProductsXlsxController.php:15
+ * @route '/cpanel/products/export.xlsx'
+ */
+        exportXlsxForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+            action: exportXlsx.url(options),
+            method: 'get',
+        })
+            /**
+* @see \App\Http\Controllers\Shopper\ExportProductsXlsxController::__invoke
+ * @see app/Http/Controllers/Shopper/ExportProductsXlsxController.php:15
+ * @route '/cpanel/products/export.xlsx'
+ */
+        exportXlsxForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+            action: exportXlsx.url({
+                        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+                            _method: 'HEAD',
+                            ...(options?.query ?? options?.mergeQuery ?? {}),
+                        }
+                    }),
+            method: 'get',
+        })
+    
+    exportXlsx.form = exportXlsxForm
 const products = {
     index: Object.assign(index, index),
 edit: Object.assign(edit, edit055014),
 variant: Object.assign(variant, variant),
 importXlsxTemplate: Object.assign(importXlsxTemplate, importXlsxTemplate),
+exportXlsx: Object.assign(exportXlsx, exportXlsx),
 }
 
 export default products

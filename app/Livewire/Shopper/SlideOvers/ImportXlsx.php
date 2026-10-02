@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Livewire\Shopper\SlideOvers;
 
+use App\Import\ProductImportRow;
+use App\Import\ProductImportTemplate;
+use App\Import\StartProductImport;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
@@ -26,8 +29,6 @@ use Shopper\Components\Wizard\StepColumn;
 use Shopper\Core\Enum\ImportStatus;
 use Shopper\Core\Import\Contracts\SupportsColumnMapping;
 use Shopper\Core\Import\ImportManager;
-use Shopper\Core\Import\ProductRow;
-use Shopper\Core\Import\StartProductImport;
 use Shopper\Core\Models\ProductImport;
 use Shopper\Traits\HandlesAuthorizationExceptions;
 
@@ -42,28 +43,7 @@ final class ImportXlsx extends SlideOverComponent implements HasActions, HasSche
 
     public const PREVIEW_LIMIT = 50;
 
-    public const MAPPABLE_FIELDS = [
-        'name',
-        'handle',
-        'description',
-        'brand',
-        'category',
-        'tags',
-        'published',
-        'sku',
-        'barcode',
-        'ean',
-        'upc',
-        'price',
-        'compare_at_price',
-        'cost_per_item',
-        'currency',
-        'quantity',
-        'weight_value',
-        'weight_unit',
-        'seo_title',
-        'seo_description',
-    ];
+    public const MAPPABLE_FIELDS = ProductImportTemplate::COLUMNS;
 
     /** @var array<string, mixed>|null */
     public ?array $data = [];
@@ -127,7 +107,7 @@ final class ImportXlsx extends SlideOverComponent implements HasActions, HasSche
                     StepColumn::make(__('shopper::pages/products.import.steps.review'))
                         ->icon(Untitledui::CheckVerified02)
                         ->schema([
-                            View::make('shopper::livewire.slide-overs.import-csv-preview'),
+                            View::make('livewire.shopper.slide-overs.import-xlsx-preview'),
                         ]),
                 ])
                     ->submitAction(new HtmlString(Blade::render(<<<'BLADE'
@@ -226,12 +206,17 @@ final class ImportXlsx extends SlideOverComponent implements HasActions, HasSche
         $totalProducts = 0;
         $totalVariants = 0;
         $totalStock = 0;
+        $totalAttributes = 0;
         $unnamed = 0;
 
-        $source->read((string) $file->getRealPath())->each(function (ProductRow $row) use (&$products, &$totalProducts, &$totalVariants, &$totalStock, &$unnamed): void {
+        $source->read((string) $file->getRealPath())->each(function (ProductImportRow $importRow) use (&$products, &$totalProducts, &$totalVariants, &$totalStock, &$totalAttributes, &$unnamed): void {
+            $row = $importRow->product;
+            $variantsCount = $row->isStandard() ? 0 : count($row->variants);
+
             $totalProducts++;
-            $totalVariants += count($row->variants);
+            $totalVariants += $variantsCount;
             $totalStock += array_sum(array_map(fn ($variant): int => $variant->quantity, $row->variants));
+            $totalAttributes += count($importRow->attributes);
 
             if ($row->name === '') {
                 $unnamed++;
@@ -242,7 +227,8 @@ final class ImportXlsx extends SlideOverComponent implements HasActions, HasSche
                     'name' => $row->name,
                     'brand' => $row->brand,
                     'price' => $row->variants[0]->price ?? null,
-                    'variants_count' => count($row->variants),
+                    'variants_count' => $variantsCount,
+                    'attributes_count' => count($importRow->attributes),
                 ];
             }
         });
@@ -252,6 +238,7 @@ final class ImportXlsx extends SlideOverComponent implements HasActions, HasSche
             'total_products' => $totalProducts,
             'total_variants' => $totalVariants,
             'total_stock' => $totalStock,
+            'total_attributes' => $totalAttributes,
             'unnamed' => $unnamed,
         ];
     }
@@ -270,7 +257,7 @@ final class ImportXlsx extends SlideOverComponent implements HasActions, HasSche
     {
         return array_map(
             fn (string $field): Select => Select::make("mapping.{$field}")
-                ->label(__("shopper::pages/products.import.fields.{$field}"))
+                ->label(__("backend.product_imports.fields.{$field}"))
                 ->options(fn (): array => array_combine($this->fileHeaders, $this->fileHeaders))
                 ->native(false)
                 ->placeholder(__('shopper::pages/products.import.not_mapped'))

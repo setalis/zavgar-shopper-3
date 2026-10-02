@@ -12,9 +12,9 @@ use OpenSpout\Writer\XLSX\Writer;
 final class WritesSpreadsheet
 {
     /**
-     * @param  list<list<null|bool|DateInterval|DateTimeInterface|float|int|string>>  $rows
+     * @param  iterable<int, list<null|bool|DateInterval|DateTimeInterface|float|int|string>>  $rows
      */
-    public function handle(string $path, array $rows): void
+    public function handle(string $path, iterable $rows): void
     {
         $writer = new Writer;
         $writer->openToFile($path);
