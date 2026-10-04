@@ -7,6 +7,7 @@ namespace App\Actions\Product;
 use App\Models\Product;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 
 final class FilterByStorefrontPrice
 {
@@ -17,7 +18,10 @@ final class FilterByStorefrontPrice
     public function bounds(Builder|Relation $query): ?array
     {
         $query = $this->toBuilder($query);
-        ['sql' => $sql, 'bindings' => $bindings] = $this->amountExpression($query);
+        $pricesTable = shopper_table('prices');
+
+        $minimum = $this->pricesQuery($query)->selectRaw("MIN({$pricesTable}.amount)");
+        $maximum = $this->pricesQuery($query)->selectRaw("MAX({$pricesTable}.amount)");
 
         $clone = $query->clone()->reorder();
         $clone->getQuery()->columns = [];
@@ -25,8 +29,8 @@ final class FilterByStorefrontPrice
         $row = $clone
             ->toBase()
             ->selectRaw(
-                "MIN({$sql}) as min_amount, MAX({$sql}) as max_amount",
-                [...$bindings, ...$bindings],
+                "MIN(({$minimum->toSql()})) as min_amount, MAX(({$maximum->toSql()})) as max_amount",
+                [...$minimum->getBindings(), ...$maximum->getBindings()],
             )
             ->first();
 
@@ -56,26 +60,22 @@ final class FilterByStorefrontPrice
             [$min, $max] = [$max, $min];
         }
 
-        ['sql' => $sql, 'bindings' => $bindings] = $this->amountExpression($query);
+        $pricesTable = shopper_table('prices');
 
-        if ($min !== null && $max !== null) {
-            return $query->whereRaw("{$sql} BETWEEN ? AND ?", [...$bindings, $min, $max]);
-        }
-
-        if ($min !== null) {
-            return $query->whereRaw("{$sql} >= ?", [...$bindings, $min]);
-        }
-
-        return $query->whereRaw("{$sql} <= ?", [...$bindings, $max]);
+        return $query->whereExists(
+            $this->pricesQuery($query)
+                ->selectRaw('1')
+                ->when($min !== null, fn (QueryBuilder $prices): QueryBuilder => $prices->where("{$pricesTable}.amount", '>=', $min))
+                ->when($max !== null, fn (QueryBuilder $prices): QueryBuilder => $prices->where("{$pricesTable}.amount", '<=', $max)),
+        );
     }
 
     /**
      * @param  Builder<Product>  $query
-     * @return array{sql: string, bindings: list<mixed>}
      */
-    private function amountExpression(Builder $query): array
+    private function pricesQuery(Builder $query): QueryBuilder
     {
-        return $query->getModel()->storefrontAmountSql($query->getModel()->getTable());
+        return $query->getModel()->storefrontPricesQuery($query->getModel()->getTable());
     }
 
     /**

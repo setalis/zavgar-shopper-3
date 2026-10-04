@@ -148,7 +148,7 @@ test('category page filters products by storefront price range', function (): vo
         );
 });
 
-test('price filter uses the minimum variant amount for variant products', function (): void {
+test('price filter matches variant products by any variant amount', function (): void {
     $product = storefrontPriceFilterVariantProduct($this->currency, [125000, 50000], [
         'name' => 'Jacket',
         'slug' => 'jacket',
@@ -160,10 +160,54 @@ test('price filter uses the minimum variant amount for variant products', functi
             ->has('products.data', 1)
             ->where('products.data.0.id', $product->id)
             ->where('priceRange.min', 50000)
-            ->where('priceRange.max', 50000)
+            ->where('priceRange.max', 125000)
         );
 
     $this->get(route('shop.index', ['price_min' => 60000]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('products.data', 1)
+            ->where('products.data.0.id', $product->id)
+        );
+
+    $this->get(route('shop.index', ['price_min' => 60000, 'price_max' => 100000]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('products.data', 0)
+        );
+});
+
+test('price filter considers both the default price and variant prices', function (): void {
+    $product = storefrontPriceFilterVariantProduct($this->currency, [3000, 8000], [
+        'name' => 'Sofa',
+        'slug' => 'sofa',
+    ]);
+
+    Price::query()->create([
+        'priceable_type' => 'product',
+        'priceable_id' => $product->id,
+        'amount' => 1000,
+        'compare_amount' => null,
+        'cost_amount' => null,
+        'currency_id' => $this->currency->id,
+    ]);
+
+    $this->get(route('shop.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('products.data', 1)
+            ->where('priceRange.min', 1000)
+            ->where('priceRange.max', 8000)
+        );
+
+    $this->get(route('shop.index', ['price_min' => 2500, 'price_max' => 4000]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('products.data', 1)
+            ->where('products.data.0.id', $product->id)
+        );
+
+    $this->get(route('shop.index', ['price_min' => 9000]))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->has('products.data', 0)

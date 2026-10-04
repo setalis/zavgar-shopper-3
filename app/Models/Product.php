@@ -120,36 +120,34 @@ final class Product extends Model
     }
 
     /**
-     * SQL for the amount shown on the storefront: the product's own price,
-     * otherwise the cheapest variant price in the current currency.
-     *
-     * @return array{sql: string, bindings: list<mixed>}
+     * Correlated query over every price of the product in the current currency:
+     * its own price plus the prices of all its variants.
      */
-    public function storefrontAmountSql(string $productsTable): array
-    {
-        $currencyCode = current_currency();
-        $own = $this->ownPriceSubquery($productsTable, $currencyCode, 'amount');
-        $variant = $this->minimumVariantPriceSubquery($productsTable, $currencyCode, 'amount');
-
-        return [
-            'sql' => sprintf('COALESCE((%s), (%s))', $own->toSql(), $variant->toSql()),
-            'bindings' => [...$own->getBindings(), ...$variant->getBindings()],
-        ];
-    }
-
-    private function ownPriceSubquery(string $productsTable, string $currencyCode, string $column): QueryBuilder
+    public function storefrontPricesQuery(string $productsTable): QueryBuilder
     {
         $pricesTable = shopper_table('prices');
+        $variantsTable = shopper_table('product_variants');
         $currenciesTable = shopper_table('currencies');
 
         return Price::query()
-            ->select("{$pricesTable}.{$column}")
             ->join($currenciesTable, "{$currenciesTable}.id", '=', "{$pricesTable}.currency_id")
-            ->whereColumn("{$pricesTable}.priceable_id", "{$productsTable}.id")
-            ->where("{$pricesTable}.priceable_type", 'product')
-            ->where("{$currenciesTable}.code", $currencyCode)
+            ->where("{$currenciesTable}.code", current_currency())
             ->whereNotNull("{$pricesTable}.amount")
-            ->limit(1)
+            ->where(function (Builder $query) use ($pricesTable, $variantsTable, $productsTable): void {
+                $query
+                    ->where(fn (Builder $own): Builder => $own
+                        ->where("{$pricesTable}.priceable_type", 'product')
+                        ->whereColumn("{$pricesTable}.priceable_id", "{$productsTable}.id"))
+                    ->orWhere(fn (Builder $variant): Builder => $variant
+                        ->where("{$pricesTable}.priceable_type", 'variant')
+                        ->whereIn(
+                            "{$pricesTable}.priceable_id",
+                            fn (QueryBuilder $variants): QueryBuilder => $variants
+                                ->select("{$variantsTable}.id")
+                                ->from($variantsTable)
+                                ->whereColumn("{$variantsTable}.product_id", "{$productsTable}.id"),
+                        ));
+            })
             ->toBase();
     }
 
