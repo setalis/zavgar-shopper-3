@@ -35,6 +35,8 @@ final class RoutesProductImportRow
         }
 
         if ($this->updateExisting($row)) {
+            PendingProduct::query()->where('sku', $row->sku)->delete();
+
             return ProductImportRowOutcome::Updated;
         }
 
@@ -55,21 +57,29 @@ final class RoutesProductImportRow
      * Predicts the outcome for each SKU without writing anything.
      *
      * @param  list<string>  $skus
+     * @param  array<string, string>  $handlesBySku
      * @return array<string, ProductImportRowOutcome>
      */
-    public function outcomesFor(array $skus): array
+    public function outcomesFor(array $skus, array $handlesBySku = []): array
     {
         $outcomes = [];
 
         foreach (array_chunk(array_values(array_unique($skus)), 500) as $chunk) {
-            // Lowercased because the database compares SKUs case-insensitively.
+            // Lowercased because the database compares SKUs and slugs case-insensitively.
             $blacklisted = BlacklistedProduct::query()->whereIn('sku', $chunk)->pluck('sku')->map(fn (string $sku): string => mb_strtolower($sku))->flip();
             $existing = Product::withTrashed()->whereIn('sku', $chunk)->pluck('sku')->map(fn (string $sku): string => mb_strtolower($sku))->flip();
+            $existingWithoutSku = Product::withTrashed()
+                ->whereIn('slug', array_values(array_intersect_key($handlesBySku, array_flip($chunk))))
+                ->whereNull('sku')
+                ->pluck('slug')
+                ->map(fn (string $slug): string => mb_strtolower($slug))
+                ->flip();
 
             foreach ($chunk as $sku) {
                 $outcomes[$sku] = match (true) {
                     $blacklisted->has(mb_strtolower($sku)) => ProductImportRowOutcome::Skipped,
-                    $existing->has(mb_strtolower($sku)) => ProductImportRowOutcome::Updated,
+                    $existing->has(mb_strtolower($sku)),
+                    $existingWithoutSku->has(mb_strtolower($handlesBySku[$sku] ?? '')) => ProductImportRowOutcome::Updated,
                     default => ProductImportRowOutcome::Queued,
                 };
             }
@@ -80,7 +90,7 @@ final class RoutesProductImportRow
 
     public function updateExisting(ProductImportRow $row): bool
     {
-        $product = Product::withTrashed()->where('sku', $row->sku)->first();
+        $product = $this->findExisting($row);
 
         if ($product === null) {
             return false;
@@ -94,5 +104,15 @@ final class RoutesProductImportRow
         $this->importer->import($row->withHandle((string) $product->slug));
 
         return true;
+    }
+
+    /**
+     * Products created before SKU matching have no product SKU, so they are matched by handle once
+     * and receive the SKU from the file.
+     */
+    private function findExisting(ProductImportRow $row): ?Product
+    {
+        return Product::withTrashed()->where('sku', $row->sku)->first()
+            ?? Product::withTrashed()->where('slug', $row->product->handle)->whereNull('sku')->first();
     }
 }

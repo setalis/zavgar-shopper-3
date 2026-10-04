@@ -211,8 +211,9 @@ final class ImportXlsx extends SlideOverComponent implements HasActions, HasSche
         $totalAttributes = 0;
         $unnamed = 0;
         $skus = [];
+        $handlesBySku = [];
 
-        $source->read((string) $file->getRealPath())->each(function (ProductImportRow $importRow) use (&$products, &$totalProducts, &$totalVariants, &$totalStock, &$totalAttributes, &$unnamed, &$skus): void {
+        $source->read((string) $file->getRealPath())->each(function (ProductImportRow $importRow) use (&$products, &$totalProducts, &$totalVariants, &$totalStock, &$totalAttributes, &$unnamed, &$skus, &$handlesBySku): void {
             $row = $importRow->product;
             $variantsCount = $row->isStandard() ? 0 : count($row->variants);
 
@@ -227,6 +228,7 @@ final class ImportXlsx extends SlideOverComponent implements HasActions, HasSche
 
             if ($importRow->sku !== null) {
                 $skus[] = $importRow->sku;
+                $handlesBySku[$importRow->sku] = $row->handle;
             }
 
             if (count($products) < self::PREVIEW_LIMIT) {
@@ -241,7 +243,7 @@ final class ImportXlsx extends SlideOverComponent implements HasActions, HasSche
             }
         });
 
-        $outcomes = resolve(RoutesProductImportRow::class)->outcomesFor($skus);
+        $outcomes = resolve(RoutesProductImportRow::class)->outcomesFor($skus, $handlesBySku);
         $outcomeCounts = array_count_values(array_map(
             fn (string $sku): string => $outcomes[$sku]->value,
             $skus,

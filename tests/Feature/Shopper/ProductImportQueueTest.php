@@ -112,17 +112,52 @@ test('a row without sku is recorded as an import error', function (): void {
         ->and(Product::query()->count())->toBe(0);
 });
 
+test('a product without sku is matched by handle and receives the sku from the file', function (): void {
+    $product = Product::factory()->variant()->create(['name' => 'Old name', 'slug' => 'diesel-oil', 'sku' => null]);
+    PendingProduct::factory()->create(['sku' => '7245']);
+
+    $outcome = resolve(RoutesProductImportRow::class)->route(new ProductImportRow(
+        product: new ProductRow(
+            handle: 'diesel-oil',
+            name: 'Diesel oil',
+            published: true,
+            optionNames: ['Volume'],
+            variants: [new VariantRow(options: ['Volume' => '1 l'], sku: '7245/01')],
+        ),
+        sku: '7245',
+    ));
+
+    expect($outcome)->toBe(ProductImportRowOutcome::Updated)
+        ->and($product->refresh()->name)->toBe('Diesel oil')
+        ->and($product->sku)->toBe('7245')
+        ->and(Product::query()->count())->toBe(1)
+        ->and(PendingProduct::query()->count())->toBe(0);
+});
+
+test('a product with another sku is not matched by handle', function (): void {
+    Product::factory()->standard()->create(['name' => 'Kept', 'slug' => 'oil', 'sku' => 'OIL-OTHER']);
+
+    expect(resolve(RoutesProductImportRow::class)->route(queueImportRow('oil', 'Oil', 'OIL-1')))->toBe(ProductImportRowOutcome::Queued)
+        ->and(Product::query()->sole()->name)->toBe('Kept');
+});
+
 test('the preview predicts the outcome of each sku without writing', function (): void {
     Product::factory()->standard()->create(['sku' => 'OIL-1']);
+    Product::factory()->variant()->create(['slug' => 'legacy-oil', 'sku' => null]);
     BlacklistedProduct::factory()->create(['sku' => 'OIL-2']);
 
-    $outcomes = resolve(RoutesProductImportRow::class)->outcomesFor(['OIL-1', 'OIL-2', 'OIL-3']);
+    $outcomes = resolve(RoutesProductImportRow::class)->outcomesFor(
+        ['OIL-1', 'OIL-2', 'OIL-3', 'OIL-4'],
+        ['OIL-3' => 'new-oil', 'OIL-4' => 'legacy-oil'],
+    );
 
     expect($outcomes)->toBe([
         'OIL-1' => ProductImportRowOutcome::Updated,
         'OIL-2' => ProductImportRowOutcome::Skipped,
         'OIL-3' => ProductImportRowOutcome::Queued,
-    ])->and(PendingProduct::query()->count())->toBe(0);
+        'OIL-4' => ProductImportRowOutcome::Updated,
+    ])->and(PendingProduct::query()->count())->toBe(0)
+        ->and(Product::query()->whereNull('sku')->count())->toBe(1);
 });
 
 test('users without permission cannot open the import queue or the blacklist', function (): void {
