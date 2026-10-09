@@ -9,6 +9,7 @@ use App\Import\Sources\XlsxSource;
 use App\Listeners\DrainQueueAfterResponse;
 use App\Listeners\MergeGuestWishlist;
 use App\Listeners\NotifyQueuedProductImports;
+use App\Livewire\Shopper\Pages\Category\Index as CategoryIndex;
 use App\Livewire\Shopper\Pages\Product\Attributes as ProductAttributes;
 use App\Livewire\Shopper\SlideOvers\AddVariant;
 use App\Livewire\Shopper\SlideOvers\ChooseProductAttributes;
@@ -37,7 +38,10 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         // Shopper binds its product edit routes to this config value, so it must be replaced before routes load.
-        config(['shopper.components.product.pages.product-attributes' => ProductAttributes::class]);
+        config([
+            'shopper.components.product.pages.product-attributes' => ProductAttributes::class,
+            'shopper.components.category.pages.category-index' => CategoryIndex::class,
+        ]);
     }
 
     public function boot(): void

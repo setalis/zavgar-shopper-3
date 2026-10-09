@@ -7,11 +7,17 @@ import { useTrans } from '@/composables/useTrans';
 import { isNoDivisionCurrency } from '@/lib/format';
 import type { PriceRange } from '@/types/shop';
 
-const props = defineProps<{
-    bounds: PriceRange;
-    priceMin: number | null;
-    priceMax: number | null;
-}>();
+const props = withDefaults(
+    defineProps<{
+        bounds: PriceRange;
+        priceMin: number | null;
+        priceMax: number | null;
+        showHeading?: boolean;
+    }>(),
+    {
+        showHeading: true,
+    },
+);
 
 const emit = defineEmits<{
     change: [min: number | null, max: number | null];
@@ -78,6 +84,7 @@ function onUpdate(value: number | number[] | undefined): void {
 <template>
     <div>
         <h3
+            v-if="showHeading"
             class="mb-3 font-heading text-sm font-bold tracking-[0.06em] text-ink uppercase"
         >
             {{ t('shop.filters.price_range') }}

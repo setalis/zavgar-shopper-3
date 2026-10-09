@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Shopper\DownloadProductImportXlsxTemplateController;
 use App\Http\Controllers\Shopper\ExportProductsXlsxController;
 use App\Livewire\Shopper\Pages\BlacklistedProducts\Index as BlacklistedProductsIndex;
+use App\Livewire\Shopper\Pages\CategoryFilters\Edit as CategoryFiltersEdit;
 use App\Livewire\Shopper\Pages\HomepageBanners\Edit as HomepageBannerEdit;
 use App\Livewire\Shopper\Pages\HomepageBanners\Index as HomepageBannersIndex;
 use App\Livewire\Shopper\Pages\MenuItems\Edit as MenuItemEdit;
@@ -22,6 +23,9 @@ Route::get('/products/pending', PendingProductsIndex::class)
     ->name('products.pending.index');
 Route::get('/products/blacklist', BlacklistedProductsIndex::class)
     ->name('products.blacklist.index');
+
+Route::get('/categories/{category}/filters', CategoryFiltersEdit::class)
+    ->name('categories.filters');
 
 Route::get('/banners', HomepageBannersIndex::class)
     ->name('banners.index');

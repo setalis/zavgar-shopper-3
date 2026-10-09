@@ -8,6 +8,8 @@ use App\Models\Product;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Support\Facades\DB;
+use Shopper\Core\Models\Price;
 
 final class FilterByStorefrontPrice
 {
@@ -19,19 +21,37 @@ final class FilterByStorefrontPrice
     {
         $query = $this->toBuilder($query);
         $pricesTable = shopper_table('prices');
+        $variantsTable = shopper_table('product_variants');
+        $currenciesTable = shopper_table('currencies');
 
-        $minimum = $this->pricesQuery($query)->selectRaw("MIN({$pricesTable}.amount)");
-        $maximum = $this->pricesQuery($query)->selectRaw("MAX({$pricesTable}.amount)");
+        $ownPrices = Price::query()
+            ->select("{$pricesTable}.amount")
+            ->join($currenciesTable, "{$currenciesTable}.id", '=', "{$pricesTable}.currency_id")
+            ->joinSub($this->productIds($query), 'filtered_products', function ($join) use ($pricesTable): void {
+                $join->on("{$pricesTable}.priceable_id", '=', 'filtered_products.id');
+            })
+            ->where("{$pricesTable}.priceable_type", 'product')
+            ->where("{$currenciesTable}.code", current_currency())
+            ->whereNotNull("{$pricesTable}.amount")
+            ->toBase();
 
-        $clone = $query->clone()->reorder();
-        $clone->getQuery()->columns = [];
+        $variantPrices = Price::query()
+            ->select("{$pricesTable}.amount")
+            ->join($currenciesTable, "{$currenciesTable}.id", '=', "{$pricesTable}.currency_id")
+            ->join($variantsTable, function ($join) use ($pricesTable, $variantsTable): void {
+                $join->on("{$pricesTable}.priceable_id", '=', "{$variantsTable}.id")
+                    ->where("{$pricesTable}.priceable_type", 'variant');
+            })
+            ->joinSub($this->productIds($query), 'filtered_products', function ($join) use ($variantsTable): void {
+                $join->on("{$variantsTable}.product_id", '=', 'filtered_products.id');
+            })
+            ->where("{$currenciesTable}.code", current_currency())
+            ->whereNotNull("{$pricesTable}.amount")
+            ->toBase();
 
-        $row = $clone
-            ->toBase()
-            ->selectRaw(
-                "MIN(({$minimum->toSql()})) as min_amount, MAX(({$maximum->toSql()})) as max_amount",
-                [...$minimum->getBindings(), ...$maximum->getBindings()],
-            )
+        $row = DB::query()
+            ->fromSub($ownPrices->unionAll($variantPrices), 'storefront_amounts')
+            ->selectRaw('MIN(amount) as min_amount, MAX(amount) as max_amount')
             ->first();
 
         if ($row === null || $row->min_amount === null || $row->max_amount === null) {
@@ -76,6 +96,18 @@ final class FilterByStorefrontPrice
     private function pricesQuery(Builder $query): QueryBuilder
     {
         return $query->getModel()->storefrontPricesQuery($query->getModel()->getTable());
+    }
+
+    /**
+     * @param  Builder<Product>  $query
+     * @return Builder<Product>
+     */
+    private function productIds(Builder $query): Builder
+    {
+        $clone = $query->clone()->reorder();
+        $clone->getQuery()->columns = [];
+
+        return $clone->select($query->getModel()->qualifyColumn('id'));
     }
 
     /**

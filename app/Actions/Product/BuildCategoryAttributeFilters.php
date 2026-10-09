@@ -29,12 +29,14 @@ final class BuildCategoryAttributeFilters
     ];
 
     /**
+     * @param  list<int>|null  $categoryIds
      * @return list<array{id: int, name: string, slug: string, type: string, values: list<array{key: string, label: string}>}>
      */
-    public function handle(Category $category): array
+    public function handle(Category $category, ?array $categoryIds = null): array
     {
-        $attributeFilters = $this->attributeFacets($category);
-        $brandFilter = $this->brandFacet($category);
+        $categoryIds ??= [$category->id];
+        $attributeFilters = $this->attributeFacets($categoryIds);
+        $brandFilter = $this->brandFacet($categoryIds);
 
         if ($brandFilter === null) {
             return $attributeFilters;
@@ -44,24 +46,35 @@ final class BuildCategoryAttributeFilters
     }
 
     /**
+     * @param  list<int>  $categoryIds
+     * @param  list<int>|null  $attributeIds
      * @return list<array{id: int, name: string, slug: string, type: string, values: list<array{key: string, label: string}>}>
      */
-    private function attributeFacets(Category $category): array
+    public function attributeFacets(array $categoryIds, ?array $attributeIds = null): array
     {
         $rows = AttributeProduct::query()
             ->with(['attribute', 'value'])
             ->whereHas(
                 'attribute',
-                fn ($query) => $query
-                    ->enabled()
-                    ->isFilterable()
-                    ->whereIn('type', self::FILTERABLE_TYPES),
+                function ($query) use ($attributeIds): void {
+                    $query->enabled();
+
+                    if ($attributeIds === null) {
+                        $query
+                            ->isFilterable()
+                            ->whereIn('type', self::FILTERABLE_TYPES);
+
+                        return;
+                    }
+
+                    $query->whereIn('id', $attributeIds);
+                },
             )
             ->whereHas(
                 'product',
                 fn ($query) => $query
                     ->scopes('publish')
-                    ->whereHas('categories', fn ($categories) => $categories->where('id', $category->id)),
+                    ->whereHas('categories', fn ($categories) => $categories->whereIn('id', $categoryIds)),
             )
             ->get();
 
@@ -75,9 +88,10 @@ final class BuildCategoryAttributeFilters
     }
 
     /**
+     * @param  list<int>  $categoryIds
      * @return array{id: int, name: string, slug: string, type: string, values: list<array{key: string, label: string}>}|null
      */
-    private function brandFacet(Category $category): ?array
+    public function brandFacet(array $categoryIds): ?array
     {
         $values = Brand::query()
             ->enabled()
@@ -85,7 +99,7 @@ final class BuildCategoryAttributeFilters
                 'products',
                 fn ($query) => $query
                     ->scopes('publish')
-                    ->whereHas('categories', fn ($categories) => $categories->where('id', $category->id)),
+                    ->whereHas('categories', fn ($categories) => $categories->whereIn('id', $categoryIds)),
             )
             ->orderBy('name')
             ->get(['id', 'name', 'slug'])

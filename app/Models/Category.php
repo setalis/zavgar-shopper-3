@@ -9,6 +9,7 @@ use App\Concerns\InteractsWithStorefrontMedia;
 use App\Observers\CategoryObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection as BaseCollection;
 use Shopper\Models\Category as Model;
 
@@ -29,6 +30,14 @@ final class Category extends Model
             'seo_title' => 'seo_title',
             'seo_description' => 'seo_description',
         ];
+    }
+
+    /**
+     * @return HasMany<CategoryFilterGroup, $this>
+     */
+    public function filterGroups(): HasMany
+    {
+        return $this->hasMany(CategoryFilterGroup::class)->orderBy('position');
     }
 
     /**

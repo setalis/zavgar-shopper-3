@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Shop;
 
-use App\Actions\Product\ApplyCategoryAttributeFilters;
-use App\Actions\Product\BuildCategoryAttributeFilters;
+use App\Actions\Product\ApplyCategoryFilters;
+use App\Actions\Product\BuildCategoryFilters;
 use App\Actions\Product\FilterByStorefrontPrice;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Shop\ShowCategoryRequest;
@@ -34,23 +34,30 @@ final class CategoryController extends Controller
     public function show(
         ShowCategoryRequest $request,
         Category $category,
-        BuildCategoryAttributeFilters $buildCategoryAttributeFilters,
-        ApplyCategoryAttributeFilters $applyCategoryAttributeFilters,
+        BuildCategoryFilters $buildCategoryFilters,
+        ApplyCategoryFilters $applyCategoryFilters,
         FilterByStorefrontPrice $filterByStorefrontPrice,
     ): Response {
         $sort = $request->sort();
         $selectedAttrs = $request->selectedAttrs();
         $price = $request->priceRange();
-        $attributeFilters = $buildCategoryAttributeFilters->handle($category);
+        $filterGroups = $buildCategoryFilters->handle($category);
+        $attributeFilters = $buildCategoryFilters->flatten($filterGroups);
+        $includePrice = $buildCategoryFilters->includesPrice($filterGroups);
+        $categoryIds = $buildCategoryFilters->categoryIds($category);
 
         $query = Product::query()
             ->scopes('publish')
-            ->whereHas('categories', fn ($q) => $q->where('id', $category->id));
+            ->whereHas('categories', fn ($q) => $q->whereIn('id', $categoryIds));
 
-        $query = $applyCategoryAttributeFilters->handle($query, $selectedAttrs, $attributeFilters);
+        $query = $applyCategoryFilters->handle($query, $selectedAttrs, $attributeFilters);
 
-        $priceRange = $filterByStorefrontPrice->bounds($query);
-        $query = $filterByStorefrontPrice->apply($query, $price['min'], $price['max'])
+        $priceRange = $includePrice ? $filterByStorefrontPrice->bounds($query) : null;
+        $query = $includePrice
+            ? $filterByStorefrontPrice->apply($query, $price['min'], $price['max'])
+            : $query;
+
+        $query = $query
             ->with(['media', 'brand.media'])
             ->withStorefrontTranslations()
             ->withCurrentPrices()
@@ -76,13 +83,14 @@ final class CategoryController extends Controller
                     ->get(),
             )),
             'products' => localize_storefront($query->paginate(12)->withQueryString()),
+            'filterGroups' => $filterGroups,
             'attributeFilters' => $attributeFilters,
             'priceRange' => $priceRange,
             'filters' => [
                 'sort' => $sort,
                 'attrs' => (object) $selectedAttrs,
-                'price_min' => $price['min'],
-                'price_max' => $price['max'],
+                'price_min' => $includePrice ? $price['min'] : null,
+                'price_max' => $includePrice ? $price['max'] : null,
             ],
             'hreflang' => storefront_hreflang('shop.category', ['category' => $category]),
         ]);

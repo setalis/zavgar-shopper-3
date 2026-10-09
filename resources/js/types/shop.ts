@@ -140,6 +140,13 @@ export type AttributeFilter = {
     slug: string;
     type: string;
     values: AttributeFilterValue[];
+    expanded: boolean;
+};
+
+export type FilterGroup = {
+    id: number;
+    name: string | null;
+    parameters: AttributeFilter[];
 };
 
 export type PriceRange = {

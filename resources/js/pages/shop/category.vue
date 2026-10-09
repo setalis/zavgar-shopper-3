@@ -32,7 +32,7 @@ import { stripHtml } from '@/lib/format';
 import { withPriceParams } from '@/lib/price-filter';
 import { home } from '@/routes';
 import * as shop from '@/routes/shop';
-import type { AttributeFilter, Category, PriceRange, Product } from '@/types/shop';
+import type { AttributeFilter, Category, FilterGroup, PriceRange, Product } from '@/types/shop';
 
 type Paginated<T> = {
     data: T[];
@@ -53,6 +53,7 @@ const props = defineProps<{
     category: Category;
     children: Category[];
     products: Paginated<Product>;
+    filterGroups: FilterGroup[];
     attributeFilters: AttributeFilter[];
     priceRange: PriceRange | null;
     filters: Filters;
@@ -75,12 +76,15 @@ const description = computed<string>(() =>
     stripHtml(props.category.description),
 );
 
-const hasAttributeFilters = computed<boolean>(
-    () => props.attributeFilters.length > 0,
-);
-
 const hasSidebarFilters = computed<boolean>(
-    () => hasAttributeFilters.value || props.priceRange !== null,
+    () =>
+        props.filterGroups.some((group) =>
+            group.parameters.some((parameter) =>
+                parameter.slug === 'price'
+                    ? props.priceRange != null
+                    : parameter.values.length > 0,
+            ),
+        ),
 );
 
 const selectedAttrs = computed<Record<string, string[]>>(
@@ -176,7 +180,7 @@ watch(sort, (value) => {
             <CategoryAttributeFilters
                 v-if="hasSidebarFilters"
                 class="hidden lg:block"
-                :attributes="attributeFilters"
+                :groups="filterGroups"
                 :selected="selectedAttrs"
                 :price-range="priceRange"
                 :price-min="filters.price_min"
@@ -286,7 +290,7 @@ watch(sort, (value) => {
             <div class="flex-1 overflow-y-auto p-5">
                 <CategoryAttributeFilters
                     class="border-0 p-0"
-                    :attributes="attributeFilters"
+                    :groups="filterGroups"
                     :selected="selectedAttrs"
                     :price-range="priceRange"
                     :price-min="filters.price_min"
