@@ -20,6 +20,9 @@ return [
     ],
     'products' => [
         'copy_to_draft' => 'Copy to draft',
+        'delete_bulk_heading' => 'Delete selected products?',
+        'delete_bulk_description' => 'Selected products will be removed from the catalog. This cannot be undone.',
+        'deleted_bulk' => ':count product(s) deleted.',
     ],
     'tax' => [
         'ttc' => 'TTC',

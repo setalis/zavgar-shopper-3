@@ -20,6 +20,9 @@ return [
     ],
     'products' => [
         'copy_to_draft' => 'Копіювати в чернетку',
+        'delete_bulk_heading' => 'Видалити вибрані товари?',
+        'delete_bulk_description' => 'Вибрані товари буде видалено з каталогу. Цю дію не можна скасувати.',
+        'deleted_bulk' => 'Видалено товарів: :count.',
     ],
     'tax' => [
         'ttc' => 'з ПДВ',

@@ -8,6 +8,7 @@ use App\Import\ProductImportTemplate;
 use App\Import\Sources\XlsxSource;
 use App\Import\StartProductImport;
 use App\Jobs\CreatePendingProductsJob;
+use App\Livewire\Shopper\Pages\Product\Index as ProductIndex;
 use App\Livewire\Shopper\SlideOvers\ImportXlsx;
 use App\Models\PendingProduct;
 use App\Models\Product;
@@ -32,7 +33,6 @@ use Shopper\Core\Models\Inventory;
 use Shopper\Core\Models\ProductImport;
 use Shopper\Core\Models\Setting;
 use Shopper\Database\Seeders\AuthTableSeeder;
-use Shopper\Livewire\Pages\Product\Index as ProductIndex;
 
 uses(RefreshDatabase::class);
 

@@ -11,6 +11,7 @@ use App\Listeners\MergeGuestWishlist;
 use App\Listeners\NotifyQueuedProductImports;
 use App\Livewire\Shopper\Pages\Category\Index as CategoryIndex;
 use App\Livewire\Shopper\Pages\Product\Attributes as ProductAttributes;
+use App\Livewire\Shopper\Pages\Product\Index as ProductIndex;
 use App\Livewire\Shopper\SlideOvers\AddVariant;
 use App\Livewire\Shopper\SlideOvers\ChooseProductAttributes;
 use App\Livewire\Shopper\SlideOvers\GenerateVariants;
@@ -39,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // Shopper binds its product edit routes to this config value, so it must be replaced before routes load.
         config([
+            'shopper.components.product.pages.product-index' => ProductIndex::class,
             'shopper.components.product.pages.product-attributes' => ProductAttributes::class,
             'shopper.components.category.pages.category-index' => CategoryIndex::class,
         ]);
