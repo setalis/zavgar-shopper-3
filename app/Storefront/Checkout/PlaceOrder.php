@@ -6,10 +6,12 @@ namespace App\Storefront\Checkout;
 
 use App\CheckoutSession;
 use App\Storefront\Cart\CartGateway;
+use Closure;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Shopper\Cart\Actions\CreateOrderFromCartAction;
+use Shopper\Cart\Exceptions\PriceChangedException;
 use Shopper\Core\Models\Order;
 
 final readonly class PlaceOrder
@@ -19,7 +21,10 @@ final readonly class PlaceOrder
         private CreateOrderFromCartAction $createOrderFromCart,
     ) {}
 
-    public function handle(): Order
+    /**
+     * @param  (Closure(): bool)|null  $honoursPayment
+     */
+    public function handle(?Closure $honoursPayment = null): Order
     {
         $checkout = session()->get(CheckoutSession::KEY);
 
@@ -65,11 +70,18 @@ final readonly class PlaceOrder
         abort_unless($lock->get(), 409, __('backend.order.checkout_in_progress'));
 
         try {
-            $order = DB::transaction(fn (): Order => $this->createOrderFromCart->execute($cart));
+            $order = DB::transaction(fn (): Order => $this->createOrderFromCart->execute(
+                $cart,
+                honoursPayment: $honoursPayment,
+            ));
 
             CheckoutOrderAccess::remember($order);
 
             return $order;
+        } catch (PriceChangedException $exception) {
+            $this->cart->reprice($cart);
+
+            throw $exception;
         } finally {
             $lock->release();
         }

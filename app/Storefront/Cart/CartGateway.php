@@ -99,8 +99,27 @@ final readonly class CartGateway
     /**
      * @param  array<string, mixed>|null  $session
      */
-    public function setPaymentSession(Cart $cart, ?array $session): void
+    public function setPaymentSession(Cart $cart, ?array $session): bool
     {
-        $this->cartManager->setPaymentSession($cart, $session);
+        return $this->cartManager->setPaymentSession($cart, $session);
+    }
+
+    public function releasePaymentSession(Cart $cart): void
+    {
+        $this->cartManager->releasePaymentSession($cart);
+    }
+
+    public function reprice(Cart $cart): void
+    {
+        $this->cartManager->reprice($cart);
+    }
+
+    public function syncZone(Cart $cart, int $zoneId, string $currencyCode): void
+    {
+        $this->cartManager->changeContext($cart, $zoneId, $cart->channel_id);
+
+        if ($cart->currency_code !== $currencyCode) {
+            $this->cartManager->changeCurrency($cart, $currencyCode);
+        }
     }
 }

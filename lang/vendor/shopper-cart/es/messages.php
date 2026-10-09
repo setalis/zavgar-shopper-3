@@ -1,0 +1,24 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+
+    'discount' => [
+        'not_active' => 'El descuento no está activo.',
+        'not_started' => 'El descuento aún no ha comenzado.',
+        'expired' => 'El descuento ha expirado.',
+        'usage_limit_reached' => 'Se ha alcanzado el límite de uso del descuento.',
+        'campaign_budget_reached' => 'Esta promoción ya no está disponible.',
+        'already_used' => 'El descuento ya ha sido utilizado por este cliente.',
+        'requires_login' => 'El descuento requiere un cliente con sesión iniciada.',
+        'customer_not_eligible' => 'El cliente no es elegible para este descuento.',
+        'not_available_in_zone' => 'El descuento no está disponible en esta zona.',
+        'currency_mismatch' => 'La moneda del descuento no coincide con la del carrito.',
+        'min_amount_not_reached' => 'No se ha alcanzado el monto mínimo de compra.',
+        'min_quantity_not_reached' => 'No se ha alcanzado la cantidad mínima.',
+        'invalid_value' => 'El valor del descuento debe ser mayor que cero.',
+        'invalid_percentage' => 'El descuento porcentual no puede superar el 100 %.',
+    ],
+
+];

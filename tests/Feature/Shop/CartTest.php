@@ -2,13 +2,17 @@
 
 declare(strict_types=1);
 
+use App\Actions\GetCountriesByZone;
+use App\Actions\ZoneSessionManager;
 use App\Models\Product;
 use App\Storefront\Cart\CartGateway;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Shopper\Core\Models\Country;
 use Shopper\Core\Models\Currency;
 use Shopper\Core\Models\Price;
 use Shopper\Core\Models\Setting;
+use Shopper\Core\Models\Zone;
 
 uses(RefreshDatabase::class);
 
@@ -124,4 +128,78 @@ test('clearing the cart removes every line', function (): void {
             ->component('shop/cart')
             ->where('shop.cart_count', 0)
         );
+});
+
+test('changing the storefront zone reprices cart lines through CartManager', function (): void {
+    $euro = Currency::query()->create([
+        'name' => 'Euro',
+        'code' => 'EUR',
+        'symbol' => '€',
+        'format' => '€1.234,56',
+    ]);
+
+    $ukraine = Zone::factory()->create([
+        'name' => 'Ukraine',
+        'currency_id' => $this->currency->id,
+        'is_enabled' => true,
+    ]);
+
+    $germany = Zone::factory()->create([
+        'name' => 'Germany',
+        'currency_id' => $euro->id,
+        'is_enabled' => true,
+    ]);
+
+    $ua = Country::factory()->create([
+        'name' => 'Ukraine',
+        'cca2' => 'UA',
+        'cca3' => 'UKR',
+    ]);
+
+    $de = Country::factory()->create([
+        'name' => 'Germany',
+        'cca2' => 'DE',
+        'cca3' => 'DEU',
+    ]);
+
+    $ukraine->countries()->attach($ua->id);
+    $germany->countries()->attach($de->id);
+    GetCountriesByZone::flush();
+
+    $product = pricedStandardProduct($this->currency);
+
+    Price::query()->create([
+        'priceable_type' => 'product',
+        'priceable_id' => $product->id,
+        'amount' => 18500,
+        'compare_amount' => null,
+        'cost_amount' => null,
+        'currency_id' => $euro->id,
+    ]);
+
+    ZoneSessionManager::setSessionForCountryCode('UA');
+
+    $this->post(route('shop.cart.add'), [
+        'product_id' => $product->id,
+        'quantity' => 1,
+    ])->assertRedirect();
+
+    $cart = resolve(CartGateway::class)->current();
+
+    expect($cart)->not->toBeNull()
+        ->and($cart->zone_id)->toBe($ukraine->id)
+        ->and($cart->currency_code)->toBe('USD')
+        ->and($cart->lines->first()?->unit_price_amount)->toBe(19900);
+
+    $this->from(route('shop.cart'))
+        ->patch(route('shop.zone.update'), ['country_code' => 'DE'])
+        ->assertRedirect(route('shop.cart'))
+        ->assertSessionHasNoErrors();
+
+    $cart = resolve(CartGateway::class)->current()?->fresh(['lines']);
+
+    expect($cart)->not->toBeNull()
+        ->and($cart->zone_id)->toBe($germany->id)
+        ->and($cart->currency_code)->toBe('EUR')
+        ->and($cart->lines->first()?->unit_price_amount)->toBe(18500);
 });

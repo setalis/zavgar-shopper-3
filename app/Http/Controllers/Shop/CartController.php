@@ -11,12 +11,16 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Storefront\Cart\CartGateway;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Shopper\Cart\Exceptions\InsufficientStockException;
 use Shopper\Cart\Exceptions\MissingPriceException;
+use Shopper\Cart\Exceptions\PaymentSessionCollectedException;
+use Shopper\Cart\Exceptions\QuantityRuleViolationException;
+use Shopper\Core\Exceptions\PaymentProviderUnavailableException;
 
 final class CartController extends Controller
 {
@@ -51,12 +55,10 @@ final class CartController extends Controller
             ? ProductVariant::query()->where('product_id', $product->id)->findOrFail($data['variant_id'])
             : null;
 
-        try {
-            $addToCart->handle($product, $variant, $data['quantity'] ?? 1);
-        } catch (InsufficientStockException) {
-            return back()->withErrors(['cart' => __('backend.cart.insufficient_stock')]);
-        } catch (MissingPriceException) {
-            return back()->withErrors(['cart' => __('backend.cart.price_missing')]);
+        $error = $this->mutateCart(fn () => $addToCart->handle($product, $variant, $data['quantity'] ?? 1));
+
+        if ($error) {
+            return $error;
         }
 
         $this->invalidateCheckoutSession();
@@ -78,12 +80,10 @@ final class CartController extends Controller
             return back();
         }
 
-        try {
-            $this->cart->update($cart, $line, ['quantity' => $data['quantity']]);
-        } catch (InsufficientStockException) {
-            return back()->withErrors(['cart' => __('backend.cart.insufficient_stock')]);
-        } catch (MissingPriceException) {
-            return back()->withErrors(['cart' => __('backend.cart.price_missing')]);
+        $error = $this->mutateCart(fn () => $this->cart->update($cart, $line, ['quantity' => $data['quantity']]));
+
+        if ($error) {
+            return $error;
         }
 
         $this->invalidateCheckoutSession();
@@ -99,7 +99,11 @@ final class CartController extends Controller
             return back();
         }
 
-        $this->cart->remove($cart, $line);
+        $error = $this->mutateCart(fn () => $this->cart->remove($cart, $line));
+
+        if ($error) {
+            return $error;
+        }
 
         $this->invalidateCheckoutSession();
 
@@ -114,11 +118,35 @@ final class CartController extends Controller
             return back();
         }
 
-        $this->cart->clear($cart);
+        $error = $this->mutateCart(fn () => $this->cart->clear($cart));
+
+        if ($error) {
+            return $error;
+        }
 
         $this->invalidateCheckoutSession();
 
         return back();
+    }
+
+    /**
+     * @param  callable(): mixed  $mutation
+     */
+    private function mutateCart(callable $mutation): ?RedirectResponse
+    {
+        try {
+            $mutation();
+        } catch (InsufficientStockException) {
+            return back()->withErrors(['cart' => __('backend.cart.insufficient_stock')]);
+        } catch (MissingPriceException) {
+            return back()->withErrors(['cart' => __('backend.cart.price_missing')]);
+        } catch (LockTimeoutException) {
+            return back()->withErrors(['cart' => __('backend.order.checkout_in_progress')]);
+        } catch (PaymentProviderUnavailableException|PaymentSessionCollectedException|QuantityRuleViolationException $exception) {
+            return back()->withErrors(['cart' => $exception->getMessage()]);
+        }
+
+        return null;
     }
 
     private function invalidateCheckoutSession(): void
@@ -126,7 +154,9 @@ final class CartController extends Controller
         session()->forget([
             CheckoutSession::KEY,
             'stripe_payment',
+            'stripe_intent_id',
             'stripe_order_number',
+            'checkout_cart_id',
         ]);
     }
 }

@@ -38,7 +38,7 @@
     "@hugeicons/vue": "^1.0.8",
     "@inertiajs/vite": "^3.0.0",
     "@inertiajs/vue3": "^3.0.0",
-    "@shopperlabs/shopper-types": "^2.11.1",
+    "@shopperlabs/shopper-types": "^3.0.0-rc.3",
     "@stripe/stripe-js": "^4.10.0",
     "@vueuse/core": "^12.8.2",
     "class-variance-authority": "^0.7.1",

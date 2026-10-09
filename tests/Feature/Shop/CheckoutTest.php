@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Actions\CreateOrder;
 use App\Actions\GetCountriesByZone;
 use App\Actions\ZoneSessionManager;
 use App\Models\Product;
@@ -337,6 +338,69 @@ test('guests cannot register with an email that already belongs to an account', 
     expect(User::query()->where('email', $user->email)->count())->toBe(1);
 
     $this->assertGuest();
+});
+
+test('placing an order after a catalog price increase sends the customer back to the cart', function (): void {
+    $user = User::factory()->create();
+    $catalog = createCheckoutCatalog($this->currency);
+
+    $this->actingAs($user);
+    addProductToCart($catalog);
+
+    $this->post(route('shop.checkout.shipping-address'), shippingAddressPayload())
+        ->assertRedirect(route('shop.checkout.index'));
+
+    $this->post(route('shop.checkout.shipping-option'), [
+        'service_code' => $catalog['shippingOption']->public_id ?? $catalog['shippingOption']->id,
+    ])->assertRedirect(route('shop.checkout.index'));
+
+    $this->post(route('shop.checkout.prepare-payment'), [
+        'payment_method_id' => $catalog['paymentMethod']->id,
+    ])->assertRedirect(route('shop.checkout.index', ['step' => 3]));
+
+    Price::query()
+        ->where('priceable_id', $catalog['product']->id)
+        ->update(['amount' => 25000]);
+
+    $this->from(route('shop.checkout.index'))
+        ->post(route('shop.checkout.place-order'), [
+            'payment_method_id' => $catalog['paymentMethod']->id,
+        ])
+        ->assertRedirect(route('shop.cart'))
+        ->assertSessionHasErrors('cart');
+
+    expect(Order::query()->count())->toBe(0)
+        ->and(resolve(CartGateway::class)->current()?->lines->first()?->unit_price_amount)->toBe(25000);
+});
+
+test('a collected payment still completes when the catalog price has increased', function (): void {
+    $user = User::factory()->create();
+    $catalog = createCheckoutCatalog($this->currency);
+
+    $this->actingAs($user);
+    addProductToCart($catalog);
+
+    $this->post(route('shop.checkout.shipping-address'), shippingAddressPayload())
+        ->assertRedirect(route('shop.checkout.index'));
+
+    $this->post(route('shop.checkout.shipping-option'), [
+        'service_code' => $catalog['shippingOption']->public_id ?? $catalog['shippingOption']->id,
+    ])->assertRedirect(route('shop.checkout.index'));
+
+    $this->post(route('shop.checkout.prepare-payment'), [
+        'payment_method_id' => $catalog['paymentMethod']->id,
+    ])->assertRedirect(route('shop.checkout.index', ['step' => 3]));
+
+    $paidAmount = resolve(CartGateway::class)->current()?->lines->first()?->unit_price_amount;
+
+    Price::query()
+        ->where('priceable_id', $catalog['product']->id)
+        ->update(['amount' => 25000]);
+
+    $order = resolve(CreateOrder::class)->handle(fn (): bool => true);
+
+    expect($order->items->first()?->unit_price_amount)->toBe($paidAmount)
+        ->and($paidAmount)->toBe(19900);
 });
 
 test('checkout total includes the selected delivery amount once', function (): void {

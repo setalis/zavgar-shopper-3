@@ -7,7 +7,10 @@ namespace App\Actions;
 use App\CheckoutSession;
 use App\DTO\CountryByZoneData;
 use App\Storefront\Cart\CartGateway;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
+use Shopper\Cart\Exceptions\PaymentSessionCollectedException;
+use Shopper\Core\Exceptions\PaymentProviderUnavailableException;
 
 final class ZoneSessionManager
 {
@@ -53,7 +56,11 @@ final class ZoneSessionManager
         /** @var CountryByZoneData $only */
         $only = $countries->first();
 
-        return self::setSessionForCountryCode($only->countryCode);
+        try {
+            return self::setSessionForCountryCode($only->countryCode);
+        } catch (LockTimeoutException|PaymentProviderUnavailableException|PaymentSessionCollectedException) {
+            return self::getSession();
+        }
     }
 
     public static function setSessionForCountryCode(string $countryCode): ?CountryByZoneData
@@ -73,19 +80,15 @@ final class ZoneSessionManager
         }
 
         $oldCurrency = current_currency();
+        $cart = resolve(CartGateway::class)->current();
+
+        if ($cart) {
+            resolve(CartGateway::class)->syncZone($cart, $zone->zoneId, $zone->currencyCode);
+        }
 
         self::setSession($zone);
 
         session()->forget(CheckoutSession::KEY);
-
-        $cart = resolve(CartGateway::class)->current();
-
-        if ($cart) {
-            $cart->update([
-                'zone_id' => $zone->zoneId,
-                'currency_code' => $zone->currencyCode,
-            ]);
-        }
 
         Cache::forget("home_featured_products_{$oldCurrency}");
         Cache::forget("home_featured_products_{$zone->currencyCode}");

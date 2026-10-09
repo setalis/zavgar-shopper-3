@@ -6,8 +6,11 @@ namespace App\Http\Controllers\Shop;
 
 use App\Actions\ZoneSessionManager;
 use App\Http\Controllers\Controller;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Shopper\Cart\Exceptions\PaymentSessionCollectedException;
+use Shopper\Core\Exceptions\PaymentProviderUnavailableException;
 
 final class ZoneController extends Controller
 {
@@ -17,7 +20,13 @@ final class ZoneController extends Controller
             'country_code' => ['required', 'string', 'size:2'],
         ]);
 
-        ZoneSessionManager::setSessionForCountryCode($data['country_code']);
+        try {
+            ZoneSessionManager::setSessionForCountryCode($data['country_code']);
+        } catch (LockTimeoutException) {
+            return back()->withErrors(['zone' => __('backend.order.checkout_in_progress')]);
+        } catch (PaymentProviderUnavailableException|PaymentSessionCollectedException $exception) {
+            return back()->withErrors(['zone' => $exception->getMessage()]);
+        }
 
         return back();
     }

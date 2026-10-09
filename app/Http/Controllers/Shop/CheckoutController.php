@@ -24,8 +24,14 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Shopper\Cart\Exceptions\InsufficientStockException;
+use Shopper\Cart\Exceptions\PaymentSessionCollectedException;
+use Shopper\Cart\Exceptions\PriceChangedException;
+use Shopper\Cart\Exceptions\QuantityRuleViolationException;
+use Shopper\Cart\Models\Cart;
 use Shopper\Core\Enum\AddressType;
 use Shopper\Core\Enum\PaymentStatus;
+use Shopper\Core\Exceptions\PaymentProviderUnavailableException;
 use Shopper\Core\Models\Order;
 use Shopper\Payment\Enum\TransactionStatus;
 use Shopper\Payment\Enum\TransactionType;
@@ -153,7 +159,7 @@ final class CheckoutController extends Controller
         session()->put(CheckoutSession::SHIPPING_ADDRESS, $data);
 
         if ($cart = $this->cart->current()) {
-            $this->cart->addAddress($cart, AddressType::Shipping, [
+            $error = $this->mutateCheckoutCart(fn () => $this->cart->addAddress($cart, AddressType::Shipping, [
                 'first_name' => $data['first_name'],
                 'last_name' => $data['last_name'],
                 'address_1' => $data['street_address'],
@@ -162,7 +168,13 @@ final class CheckoutController extends Controller
                 'city' => $data['city'],
                 'phone' => $data['phone_number'] ?? null,
                 'country_id' => $zone?->countryId,
-            ]);
+            ]));
+
+            if ($error) {
+                return $error;
+            }
+
+            $this->forgetReleasedPaymentClientSession($cart);
         }
 
         return redirect()->route('shop.checkout.index');
@@ -202,11 +214,17 @@ final class CheckoutController extends Controller
         ]);
 
         if ($cart = $this->cart->current()) {
-            $this->cart->setShippingMethod(
+            $error = $this->mutateCheckoutCart(fn () => $this->cart->setShippingMethod(
                 $cart,
                 $selected['carrier_code'].':'.$selected['service_code'],
                 (int) $selected['amount'],
-            );
+            ));
+
+            if ($error) {
+                return $error;
+            }
+
+            $this->forgetReleasedPaymentClientSession($cart);
         }
 
         return redirect()->route('shop.checkout.index');
@@ -234,10 +252,22 @@ final class CheckoutController extends Controller
         $cart = $this->cart->current();
 
         if ($cart) {
-            $this->cart->setPaymentMethod($cart, (int) $selectedMethod['id']);
+            $error = $this->mutateCheckoutCart(fn () => $this->cart->setPaymentMethod($cart, (int) $selectedMethod['id']));
+
+            if ($error) {
+                return $error;
+            }
         }
 
         if (($selectedMethod['driver'] ?? null) !== 'stripe') {
+            if ($cart) {
+                $error = $this->mutateCheckoutCart(fn () => $this->cart->releasePaymentSession($cart));
+
+                if ($error) {
+                    return $error;
+                }
+            }
+
             session()->forget(['stripe_payment', 'stripe_intent_id']);
 
             return redirect()->route('shop.checkout.index', ['step' => 3]);
@@ -245,6 +275,12 @@ final class CheckoutController extends Controller
 
         if (! $cart || $cart->lines->isEmpty()) {
             return redirect()->route('shop.cart');
+        }
+
+        $error = $this->mutateCheckoutCart(fn () => $this->cart->releasePaymentSession($cart));
+
+        if ($error) {
+            return $error;
         }
 
         $context = $this->cart->totals($cart);
@@ -281,8 +317,11 @@ final class CheckoutController extends Controller
         session()->put('stripe_intent_id', $intentId);
 
         $this->cart->setPaymentSession($cart, [
-            'client_secret' => $result->clientSecret,
+            'driver' => 'stripe',
             'reference' => $intentId,
+            'client_secret' => $result->clientSecret,
+            'amount' => $amount,
+            'tax_inclusive' => $context->taxInclusive,
         ]);
 
         return redirect()->route('shop.checkout.index', ['step' => 3]);
@@ -327,6 +366,13 @@ final class CheckoutController extends Controller
             }
 
             return redirect()->route('shop.checkout.success', ['order' => $order->id]);
+        } catch (PriceChangedException) {
+            return redirect()->route('shop.cart')
+                ->withErrors(['cart' => __('shopper-cart::exceptions.price_changed')]);
+        } catch (LockTimeoutException) {
+            return back()->withErrors(['order' => __('backend.order.checkout_in_progress')]);
+        } catch (InsufficientStockException|PaymentProviderUnavailableException|PaymentSessionCollectedException|QuantityRuleViolationException $e) {
+            return back()->withErrors(['order' => $e->getMessage()]);
         } catch (Throwable $e) {
             report($e);
 
@@ -387,7 +433,7 @@ final class CheckoutController extends Controller
 
         try {
             $order = DB::transaction(function () use ($intentId, $intentStatus): Order {
-                $order = resolve(CreateOrder::class)->handle();
+                $order = resolve(CreateOrder::class)->handle(fn (): bool => true);
                 $this->attachStripeIntentToOrder($order, $intentId, $intentStatus);
 
                 return $order;
@@ -402,6 +448,29 @@ final class CheckoutController extends Controller
         $this->cart->forget();
 
         return redirect()->route('shop.checkout.success', ['order' => $order->id]);
+    }
+
+    /**
+     * @param  callable(): mixed  $mutation
+     */
+    private function mutateCheckoutCart(callable $mutation): ?RedirectResponse
+    {
+        try {
+            $mutation();
+        } catch (LockTimeoutException) {
+            return back()->withErrors(['order' => __('backend.order.checkout_in_progress')]);
+        } catch (PaymentProviderUnavailableException|PaymentSessionCollectedException $exception) {
+            return back()->withErrors(['order' => $exception->getMessage()]);
+        }
+
+        return null;
+    }
+
+    private function forgetReleasedPaymentClientSession(Cart $cart): void
+    {
+        if ($cart->payment_session === null) {
+            session()->forget(['stripe_payment', 'stripe_intent_id']);
+        }
     }
 
     /**
