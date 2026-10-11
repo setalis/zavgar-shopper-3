@@ -9,9 +9,11 @@ use App\Import\Sources\XlsxSource;
 use App\Listeners\DrainQueueAfterResponse;
 use App\Listeners\MergeGuestWishlist;
 use App\Listeners\NotifyQueuedProductImports;
+use App\Livewire\Shopper\Components\Dashboard\TopSellingProducts;
 use App\Livewire\Shopper\Pages\Category\Index as CategoryIndex;
 use App\Livewire\Shopper\Pages\Product\Attributes as ProductAttributes;
 use App\Livewire\Shopper\Pages\Product\Index as ProductIndex;
+use App\Livewire\Shopper\SlideOvers\AddProduct;
 use App\Livewire\Shopper\SlideOvers\AddVariant;
 use App\Livewire\Shopper\SlideOvers\ChooseProductAttributes;
 use App\Livewire\Shopper\SlideOvers\GenerateVariants;
@@ -21,6 +23,10 @@ use App\Sidebar\HomepageBannersSidebar;
 use App\Sidebar\ProductImportSidebar;
 use App\Support\StorefrontLocale;
 use Carbon\CarbonImmutable;
+use Filament\Support\Assets\AlpineComponent;
+use Filament\Support\Assets\Asset;
+use Filament\Support\Assets\Js;
+use Filament\Support\Facades\FilamentAsset;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Queue\Events\JobQueued;
@@ -30,6 +36,7 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Livewire\Livewire;
+use ReflectionProperty;
 use Shopper\Core\Events\Products\ProductImportCompleted;
 use Shopper\Core\Import\ImportManager;
 use Shopper\Sidebar\SidebarBuilder;
@@ -44,11 +51,22 @@ class AppServiceProvider extends ServiceProvider
             'shopper.components.product.pages.product-attributes' => ProductAttributes::class,
             'shopper.components.category.pages.category-index' => CategoryIndex::class,
         ]);
+
+        // The component alias contains a dot, so config() would nest it into an array.
+        $components = config('shopper.components.product.components', []);
+        unset($components['slide-overs']);
+        $components['slide-overs.add-product'] = AddProduct::class;
+
+        config([
+            'shopper.components.product.components' => $components,
+        ]);
     }
 
     public function boot(): void
     {
         $this->registerProductVariantOptions();
+        $this->registerDashboardWidgets();
+        $this->bustPublishedFilamentAssetCache();
         $this->registerProductExcelImport();
         $this->registerShopperSidebar();
         $this->configureDefaults();
@@ -75,6 +93,78 @@ class AppServiceProvider extends ServiceProvider
         Livewire::component('shopper-slide-overs.import-xlsx', ImportXlsx::class);
 
         $this->app['events']->listen(ProductImportCompleted::class, NotifyQueuedProductImports::class);
+    }
+
+    protected function registerDashboardWidgets(): void
+    {
+        Livewire::component('shopper-dashboard.top-selling-products', TopSellingProducts::class);
+    }
+
+    /**
+     * Filament asset URLs keep the package version, so a republished file is served from the browser cache.
+     */
+    protected function bustPublishedFilamentAssetCache(): void
+    {
+        $manager = FilamentAsset::getFacadeRoot();
+
+        foreach (['scripts', 'alpineComponents'] as $propertyName) {
+            $property = new ReflectionProperty($manager, $propertyName);
+            $groups = $property->getValue($manager);
+
+            foreach ($groups as $package => $assets) {
+                foreach ($assets as $index => $asset) {
+                    if (! $asset instanceof Asset || ! method_exists($asset, 'getPublicPath') || ! is_file($asset->getPublicPath())) {
+                        continue;
+                    }
+
+                    $groups[$package][$index] = $this->filamentAssetWithPublishedMtime($asset);
+                }
+            }
+
+            $property->setValue($manager, $groups);
+        }
+    }
+
+    protected function filamentAssetWithPublishedMtime(Asset $asset): Asset
+    {
+        $mtime = filemtime($asset->getPublicPath()) ?: 0;
+
+        if ($asset instanceof Js) {
+            $replacement = new class($asset->getId(), $asset->getPath()) extends Js
+            {
+                public int $publishedMtime = 0;
+
+                public function getVersion(): string
+                {
+                    return parent::getVersion().'.'.$this->publishedMtime;
+                }
+            };
+            $replacement->publishedMtime = $mtime;
+            $replacement->package($asset->getPackage());
+            $replacement->loadedOnRequest($asset->isLoadedOnRequest());
+            $replacement->async($asset->isAsync());
+            $replacement->defer($asset->isDeferred());
+            $replacement->module($asset->isModule());
+            $replacement->core($asset->isCore());
+            $replacement->navigateOnce($asset->isNavigateOnce());
+
+            return $replacement;
+        }
+
+        $replacement = new class($asset->getId(), $asset->getPath()) extends AlpineComponent
+        {
+            public int $publishedMtime = 0;
+
+            public function getVersion(): string
+            {
+                return parent::getVersion().'.'.$this->publishedMtime;
+            }
+        };
+        $replacement->publishedMtime = $mtime;
+        $replacement->package($asset->getPackage());
+        $replacement->loadedOnRequest($asset->isLoadedOnRequest());
+
+        return $replacement;
     }
 
     protected function registerProductVariantOptions(): void

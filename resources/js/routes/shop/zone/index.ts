@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Shop\ZoneController::update
- * @see app/Http/Controllers/Shop/ZoneController.php:14
+ * @see app/Http/Controllers/Shop/ZoneController.php:17
  * @route '/zone'
  */
 export const update = (options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -16,7 +16,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\Shop\ZoneController::update
- * @see app/Http/Controllers/Shop/ZoneController.php:14
+ * @see app/Http/Controllers/Shop/ZoneController.php:17
  * @route '/zone'
  */
 update.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ update.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Shop\ZoneController::update
- * @see app/Http/Controllers/Shop/ZoneController.php:14
+ * @see app/Http/Controllers/Shop/ZoneController.php:17
  * @route '/zone'
  */
 update.patch = (options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -35,7 +35,7 @@ update.patch = (options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
 
     /**
 * @see \App\Http\Controllers\Shop\ZoneController::update
- * @see app/Http/Controllers/Shop/ZoneController.php:14
+ * @see app/Http/Controllers/Shop/ZoneController.php:17
  * @route '/zone'
  */
     const updateForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -50,7 +50,7 @@ update.patch = (options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
 
             /**
 * @see \App\Http\Controllers\Shop\ZoneController::update
- * @see app/Http/Controllers/Shop/ZoneController.php:14
+ * @see app/Http/Controllers/Shop/ZoneController.php:17
  * @route '/zone'
  */
         updateForm.patch = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

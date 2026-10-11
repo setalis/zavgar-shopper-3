@@ -885,7 +885,7 @@ contact.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     contact.form = contactForm
 /**
 * @see \App\Http\Controllers\Shop\CartController::cart
- * @see app/Http/Controllers/Shop/CartController.php:27
+ * @see app/Http/Controllers/Shop/CartController.php:31
  * @route '/cart'
  */
 export const cart = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -900,7 +900,7 @@ cart.definition = {
 
 /**
 * @see \App\Http\Controllers\Shop\CartController::cart
- * @see app/Http/Controllers/Shop/CartController.php:27
+ * @see app/Http/Controllers/Shop/CartController.php:31
  * @route '/cart'
  */
 cart.url = (options?: RouteQueryOptions) => {
@@ -909,7 +909,7 @@ cart.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Shop\CartController::cart
- * @see app/Http/Controllers/Shop/CartController.php:27
+ * @see app/Http/Controllers/Shop/CartController.php:31
  * @route '/cart'
  */
 cart.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -918,7 +918,7 @@ cart.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\Shop\CartController::cart
- * @see app/Http/Controllers/Shop/CartController.php:27
+ * @see app/Http/Controllers/Shop/CartController.php:31
  * @route '/cart'
  */
 cart.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -928,7 +928,7 @@ cart.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\Shop\CartController::cart
- * @see app/Http/Controllers/Shop/CartController.php:27
+ * @see app/Http/Controllers/Shop/CartController.php:31
  * @route '/cart'
  */
     const cartForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -938,7 +938,7 @@ cart.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\Shop\CartController::cart
- * @see app/Http/Controllers/Shop/CartController.php:27
+ * @see app/Http/Controllers/Shop/CartController.php:31
  * @route '/cart'
  */
         cartForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -947,7 +947,7 @@ cart.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\Shop\CartController::cart
- * @see app/Http/Controllers/Shop/CartController.php:27
+ * @see app/Http/Controllers/Shop/CartController.php:31
  * @route '/cart'
  */
         cartForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
