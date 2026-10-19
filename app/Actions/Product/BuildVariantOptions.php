@@ -96,7 +96,7 @@ final class BuildVariantOptions
     {
         $grouped = collect();
 
-        foreach ($product->variants as $variant) {
+        foreach ($product->variants->sortBy('position') as $variant) {
             foreach ($variant->values as $value) {
                 $attrId = $value->attribute_id;
 
@@ -130,6 +130,7 @@ final class BuildVariantOptions
                         'value' => $value->value,
                         'key' => $value->key,
                         'image' => $image,
+                        'position' => $variant->position,
                     ]);
                 }
 
@@ -147,7 +148,16 @@ final class BuildVariantOptions
          * }>
          */
         return $grouped->map(function (array $attr): array {
-            $attr['values'] = $attr['values']->sortBy('id')->values()->all();
+            $attr['values'] = $attr['values']
+                ->sortBy('position')
+                ->map(fn (array $item): array => [
+                    'id' => $item['id'],
+                    'value' => $item['value'],
+                    'key' => $item['key'],
+                    'image' => $item['image'],
+                ])
+                ->values()
+                ->all();
 
             return $attr;
         })->values()->all();
