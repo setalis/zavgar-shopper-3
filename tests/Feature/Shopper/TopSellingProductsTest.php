@@ -59,13 +59,19 @@ test('renders current top sellers when a previous cache entry stores product mod
         ->assertDontSee('Unpaid Lens');
 
     expect($component->instance()->products)->toHaveCount(1)
-        ->and($component->instance()->products->first()['sales'])->toBe(4)
-        ->and($component->instance()->products->first()['product']->is($camera))->toBeTrue()
-        ->and($component->instance()->products->first()['product']->getThumbnailUrl())->toBeString()
-        ->and(Cache::get('dashboard:top-selling-products:summary'))->toBe([[
-            'product_id' => $camera->id,
+        ->and($component->instance()->products->first())->toBe([
+            'name' => 'Cached Camera',
+            'thumbnail' => $camera->getThumbnailUrl(),
             'sales' => 4,
             'reviews_count' => 0,
             'average_rating' => null,
-        ]]);
+        ]);
+
+    expect(Cache::get('dashboard:top-products'))->toBe([[
+        'name' => 'Cached Camera',
+        'thumbnail' => $camera->getThumbnailUrl(),
+        'sales' => 4,
+        'reviews_count' => 0,
+        'average_rating' => null,
+    ]]);
 });

@@ -9,7 +9,6 @@ use App\Import\Sources\XlsxSource;
 use App\Listeners\DrainQueueAfterResponse;
 use App\Listeners\MergeGuestWishlist;
 use App\Listeners\NotifyQueuedProductImports;
-use App\Livewire\Shopper\Components\Dashboard\TopSellingProducts;
 use App\Livewire\Shopper\Pages\Category\Index as CategoryIndex;
 use App\Livewire\Shopper\Pages\Product\Attributes as ProductAttributes;
 use App\Livewire\Shopper\Pages\Product\Index as ProductIndex;
@@ -65,7 +64,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->registerProductVariantOptions();
-        $this->registerDashboardWidgets();
         $this->bustPublishedFilamentAssetCache();
         $this->registerProductExcelImport();
         $this->registerShopperSidebar();
@@ -93,11 +91,6 @@ class AppServiceProvider extends ServiceProvider
         Livewire::component('shopper-slide-overs.import-xlsx', ImportXlsx::class);
 
         $this->app['events']->listen(ProductImportCompleted::class, NotifyQueuedProductImports::class);
-    }
-
-    protected function registerDashboardWidgets(): void
-    {
-        Livewire::component('shopper-dashboard.top-selling-products', TopSellingProducts::class);
     }
 
     /**

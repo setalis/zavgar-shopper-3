@@ -74,21 +74,23 @@ final class AddProduct extends ShopperAddProduct
             }
         }
 
-        $copyProductRelations = new CopyProductRelations;
+        $product = Product::withoutSyncingToSearch(function () use ($source, $values): Product {
+            return DB::transaction(function () use ($source, $values): Product {
+                $product = app()->call(CreateProductAction::class, [
+                    'values' => $values,
+                ]);
 
-        $product = DB::transaction(function () use ($copyProductRelations, $source, $values): Product {
-            $product = app()->call(CreateProductAction::class, [
-                'values' => $values,
-            ]);
+                $this->form->model($product)->saveRelationships();
 
-            $this->form->model($product)->saveRelationships();
+                if ($source instanceof Product) {
+                    (new CopyProductRelations)->execute($source, $product);
+                }
 
-            if ($source instanceof Product) {
-                $copyProductRelations->execute($source, $product);
-            }
-
-            return $product;
+                return $product;
+            });
         });
+
+        Product::query()->where('id', $product->id)->searchable();
 
         Notification::make()
             ->title(__('shopper::notifications.create', ['item' => $product->name]))

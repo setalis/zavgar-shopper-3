@@ -7706,7 +7706,7 @@
         },
         {
             "name": "shopper/cart",
-            "version": "v3.0.0-rc.3",
+            "version": "v3.0.0-rc.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/shopperlabs/cart.git",
@@ -7751,22 +7751,22 @@
             "description": "Shopper cart management with pipeline-based calculation",
             "support": {
                 "issues": "https://github.com/shopperlabs/cart/issues",
-                "source": "https://github.com/shopperlabs/cart/tree/v3.0.0-rc.3"
+                "source": "https://github.com/shopperlabs/cart/tree/v3.0.0-rc.4"
             },
             "time": "2026-10-05T13:07:42+00:00"
         },
         {
             "name": "shopper/core",
-            "version": "v3.0.0-rc.3",
+            "version": "v3.0.0-rc.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/shopperlabs/core.git",
-                "reference": "45124cb9ad3b59051b3a3f20990e772db672254d"
+                "reference": "b3d85f733b90a585b332acc23db43eb9b099bb8a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/shopperlabs/core/zipball/45124cb9ad3b59051b3a3f20990e772db672254d",
-                "reference": "45124cb9ad3b59051b3a3f20990e772db672254d",
+                "url": "https://api.github.com/repos/shopperlabs/core/zipball/b3d85f733b90a585b332acc23db43eb9b099bb8a",
+                "reference": "b3d85f733b90a585b332acc23db43eb9b099bb8a",
                 "shasum": ""
             },
             "require": {
@@ -7814,22 +7814,22 @@
             ],
             "description": "Shopper e-commerce core functionality",
             "support": {
-                "source": "https://github.com/shopperlabs/core/tree/v3.0.0-rc.3"
+                "source": "https://github.com/shopperlabs/core/tree/v3.0.0-rc.4"
             },
-            "time": "2026-10-05T13:07:11+00:00"
+            "time": "2026-10-21T19:09:44+00:00"
         },
         {
             "name": "shopper/framework",
-            "version": "v3.0.0-rc.3",
+            "version": "v3.0.0-rc.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/shopperlabs/admin.git",
-                "reference": "ffb49835ff2cfb548a6b09516c0ea5d97e8f0e86"
+                "reference": "78600424c0c409ab737974676de2debc104af7da"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/shopperlabs/admin/zipball/ffb49835ff2cfb548a6b09516c0ea5d97e8f0e86",
-                "reference": "ffb49835ff2cfb548a6b09516c0ea5d97e8f0e86",
+                "url": "https://api.github.com/repos/shopperlabs/admin/zipball/78600424c0c409ab737974676de2debc104af7da",
+                "reference": "78600424c0c409ab737974676de2debc104af7da",
                 "shasum": ""
             },
             "require": {
@@ -7923,11 +7923,11 @@
                 "issues": "https://github.com/shopperlabs/framework/issues",
                 "source": "https://github.com/shopperlabs/framework"
             },
-            "time": "2026-10-05T13:07:19+00:00"
+            "time": "2026-10-21T19:09:40+00:00"
         },
         {
             "name": "shopper/payment",
-            "version": "v3.0.0-rc.3",
+            "version": "v3.0.0-rc.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/shopperlabs/payment.git",
@@ -7971,22 +7971,22 @@
             "description": "Shopper payment providers integration",
             "support": {
                 "issues": "https://github.com/shopperlabs/payment/issues",
-                "source": "https://github.com/shopperlabs/payment/tree/v3.0.0-rc.3"
+                "source": "https://github.com/shopperlabs/payment/tree/v3.0.0-rc.4"
             },
             "time": "2026-10-05T13:05:58+00:00"
         },
         {
             "name": "shopper/shipping",
-            "version": "v3.0.0-rc.3",
+            "version": "v3.0.0-rc.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/shopperlabs/shipping.git",
-                "reference": "bafd327e352945f50e5ec0f523571a8b5f0abc56"
+                "reference": "b13db70c44bd92b06157a20ac164267d9f446382"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/shopperlabs/shipping/zipball/bafd327e352945f50e5ec0f523571a8b5f0abc56",
-                "reference": "bafd327e352945f50e5ec0f523571a8b5f0abc56",
+                "url": "https://api.github.com/repos/shopperlabs/shipping/zipball/b13db70c44bd92b06157a20ac164267d9f446382",
+                "reference": "b13db70c44bd92b06157a20ac164267d9f446382",
                 "shasum": ""
             },
             "require": {
@@ -8022,22 +8022,22 @@
             "description": "Shopper shipping providers integration",
             "support": {
                 "issues": "https://github.com/shopperlabs/shipping/issues",
-                "source": "https://github.com/shopperlabs/shipping/tree/v3.0.0-rc.3"
+                "source": "https://github.com/shopperlabs/shipping/tree/v3.0.0-rc.4"
             },
-            "time": "2026-10-05T13:05:56+00:00"
+            "time": "2026-10-21T19:09:34+00:00"
         },
         {
             "name": "shopper/sidebar",
-            "version": "v3.0.0-rc.3",
+            "version": "v3.0.0-rc.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/shopperlabs/sidebar.git",
-                "reference": "61dcb6fe40c3e6de2b9a117e6b052bfdb0bea77e"
+                "reference": "6d4f7cfb917f57f03677000f0773644d6a4026a1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/shopperlabs/sidebar/zipball/61dcb6fe40c3e6de2b9a117e6b052bfdb0bea77e",
-                "reference": "61dcb6fe40c3e6de2b9a117e6b052bfdb0bea77e",
+                "url": "https://api.github.com/repos/shopperlabs/sidebar/zipball/6d4f7cfb917f57f03677000f0773644d6a4026a1",
+                "reference": "6d4f7cfb917f57f03677000f0773644d6a4026a1",
                 "shasum": ""
             },
             "require": {
@@ -8087,13 +8087,13 @@
             ],
             "support": {
                 "issues": "https://github.com/shopperlabs/sidebar/issues",
-                "source": "https://github.com/shopperlabs/sidebar/tree/v3.0.0-rc.3"
+                "source": "https://github.com/shopperlabs/sidebar/tree/v3.0.0-rc.4"
             },
-            "time": "2026-09-17T21:04:36+00:00"
+            "time": "2026-10-21T19:09:35+00:00"
         },
         {
             "name": "shopper/stripe",
-            "version": "v3.0.0-rc.3",
+            "version": "v3.0.0-rc.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/shopperlabs/stripe.git",
@@ -8131,7 +8131,7 @@
             "description": "Stripe payment driver for Shopper",
             "support": {
                 "issues": "https://github.com/shopperlabs/stripe/issues",
-                "source": "https://github.com/shopperlabs/stripe/tree/v3.0.0-rc.3"
+                "source": "https://github.com/shopperlabs/stripe/tree/v3.0.0-rc.4"
             },
             "time": "2026-10-05T13:06:58+00:00"
         },
