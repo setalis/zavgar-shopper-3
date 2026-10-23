@@ -23,6 +23,7 @@ use Filament\Tables\Table;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Livewire\Attributes\Url;
 use Mckenziearts\Icons\Untitledui\Enums\Untitledui;
 use Shopper\Core\Models\ProductImport;
 use Shopper\Livewire\Pages\AbstractPageComponent;
@@ -35,12 +36,33 @@ final class Index extends AbstractPageComponent implements HasActions, HasSchema
     use InteractsWithSchemas;
     use InteractsWithTable;
 
+    #[Url(except: 'products')]
+    public string $tab = 'products';
+
     public function mount(): void
     {
         $this->authorize('products.create');
+        $this->normalizeTab();
+    }
+
+    public function updatedTab(): void
+    {
+        $this->normalizeTab();
+        $this->resetTable();
     }
 
     public function table(Table $table): Table
+    {
+        return $this->productTable($table);
+    }
+
+    public function render(): View
+    {
+        return view('livewire.shopper.pages.pending-products.index')
+            ->title(__('backend.pending_products.menu'));
+    }
+
+    private function productTable(Table $table): Table
     {
         return $table
             ->query(PendingProduct::query()->with('import'))
@@ -72,7 +94,7 @@ final class Index extends AbstractPageComponent implements HasActions, HasSchema
 
                         return $price === null ? null : shopper_money_format((int) round($price * 100));
                     })
-                    ->placeholder('—')
+                    ->placeholder('вЂ”')
                     ->alignEnd(),
                 TextColumn::make('status')
                     ->label(__('backend.pending_products.status_label'))
@@ -82,7 +104,7 @@ final class Index extends AbstractPageComponent implements HasActions, HasSchema
                     ->color('danger')
                     ->limit(80)
                     ->tooltip(fn (PendingProduct $record): ?string => $record->error)
-                    ->placeholder('—'),
+                    ->placeholder('вЂ”'),
                 TextColumn::make('updated_at')
                     ->label(__('backend.pending_products.imported_at'))
                     ->dateTime()
@@ -162,18 +184,12 @@ final class Index extends AbstractPageComponent implements HasActions, HasSchema
             ->emptyStateIcon(Untitledui::CheckVerified02);
     }
 
-    public function render(): View
-    {
-        return view('livewire.shopper.pages.pending-products.index')
-            ->title(__('backend.pending_products.menu'));
-    }
-
     /**
      * @param  Collection<int, PendingProduct>  $records
      */
     private function createProducts(Collection $records): void
     {
-        $ids = $this->actionable($records)->pluck('id')->all();
+        $ids = $this->actionableProducts($records)->pluck('id')->all();
 
         if ($ids === []) {
             return;
@@ -197,7 +213,7 @@ final class Index extends AbstractPageComponent implements HasActions, HasSchema
      */
     private function blacklist(Collection $records): void
     {
-        $records = $this->actionable($records);
+        $records = $this->actionableProducts($records);
 
         foreach ($records as $record) {
             BlacklistedProduct::query()->firstOrCreate(
@@ -219,7 +235,7 @@ final class Index extends AbstractPageComponent implements HasActions, HasSchema
      */
     private function deleteEntries(Collection $records): void
     {
-        $records = $this->actionable($records);
+        $records = $this->actionableProducts($records);
 
         PendingProduct::query()->whereIn('id', $records->pluck('id'))->delete();
 
@@ -233,8 +249,15 @@ final class Index extends AbstractPageComponent implements HasActions, HasSchema
      * @param  Collection<int, PendingProduct>  $records
      * @return Collection<int, PendingProduct>
      */
-    private function actionable(Collection $records): Collection
+    private function actionableProducts(Collection $records): Collection
     {
         return $records->reject(fn (PendingProduct $record): bool => $record->status === PendingProductStatus::Processing);
+    }
+
+    private function normalizeTab(): void
+    {
+        if (! in_array($this->tab, ['products', 'attributes'], true)) {
+            $this->tab = 'products';
+        }
     }
 }

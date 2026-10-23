@@ -9,6 +9,7 @@ use App\Import\Sources\XlsxSource;
 use App\Listeners\DrainQueueAfterResponse;
 use App\Listeners\MergeGuestWishlist;
 use App\Listeners\NotifyQueuedProductImports;
+use App\Livewire\Shopper\Pages\Attribute\Browse as AttributeBrowse;
 use App\Livewire\Shopper\Pages\Category\Index as CategoryIndex;
 use App\Livewire\Shopper\Pages\Product\Attributes as ProductAttributes;
 use App\Livewire\Shopper\Pages\Product\Index as ProductIndex;
@@ -16,6 +17,7 @@ use App\Livewire\Shopper\SlideOvers\AddProduct;
 use App\Livewire\Shopper\SlideOvers\AddVariant;
 use App\Livewire\Shopper\SlideOvers\ChooseProductAttributes;
 use App\Livewire\Shopper\SlideOvers\GenerateVariants;
+use App\Livewire\Shopper\SlideOvers\ImportAttributesXlsx;
 use App\Livewire\Shopper\SlideOvers\ImportXlsx;
 use App\Livewire\Shopper\SlideOvers\UpdateVariant;
 use App\Sidebar\HomepageBannersSidebar;
@@ -48,6 +50,7 @@ class AppServiceProvider extends ServiceProvider
         config([
             'shopper.components.product.pages.product-index' => ProductIndex::class,
             'shopper.components.product.pages.product-attributes' => ProductAttributes::class,
+            'shopper.components.product.pages.attribute-index' => AttributeBrowse::class,
             'shopper.components.category.pages.category-index' => CategoryIndex::class,
         ]);
 
@@ -89,6 +92,7 @@ class AppServiceProvider extends ServiceProvider
         );
 
         Livewire::component('shopper-slide-overs.import-xlsx', ImportXlsx::class);
+        Livewire::component('shopper-slide-overs.import-attributes-xlsx', ImportAttributesXlsx::class);
 
         $this->app['events']->listen(ProductImportCompleted::class, NotifyQueuedProductImports::class);
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Sidebar;
 
+use App\Models\PendingAttribute;
 use App\Models\PendingProduct;
 use Shopper\Sidebar\AbstractAdminSidebar;
 use Shopper\Sidebar\Contracts\Builder\Group;
@@ -24,7 +25,9 @@ final class ProductImportSidebar extends AbstractAdminSidebar
                 $item->route('shopper.products.pending.index');
                 $item->setIcon('phosphor-queue');
 
-                $count = $canManageImports ? PendingProduct::query()->count() : 0;
+                $count = $canManageImports
+                    ? PendingProduct::query()->count() + PendingAttribute::query()->count()
+                    : 0;
 
                 if ($count > 0) {
                     $item->badge($count)->color('warning');
