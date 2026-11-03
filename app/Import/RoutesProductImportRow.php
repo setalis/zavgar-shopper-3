@@ -9,6 +9,7 @@ use App\Enums\ProductImportRowOutcome;
 use App\Models\BlacklistedProduct;
 use App\Models\PendingProduct;
 use App\Models\Product;
+use Illuminate\Bus\Batch;
 use Shopper\Core\Exceptions\ProductImportException;
 
 /**
@@ -24,7 +25,7 @@ final class RoutesProductImportRow
     /**
      * @throws ProductImportException
      */
-    public function route(ProductImportRow $row, ?int $importId = null): ProductImportRowOutcome
+    public function route(ProductImportRow $row, ?int $importId = null, ?Batch $batch = null): ProductImportRowOutcome
     {
         if ($row->sku === null) {
             throw new ProductImportException(__('backend.pending_products.missing_sku'));
@@ -34,7 +35,7 @@ final class RoutesProductImportRow
             return ProductImportRowOutcome::Skipped;
         }
 
-        if ($this->updateExisting($row)) {
+        if ($this->updateExisting($row, $batch)) {
             PendingProduct::query()->where('sku', $row->sku)->delete();
 
             return ProductImportRowOutcome::Updated;
@@ -88,7 +89,7 @@ final class RoutesProductImportRow
         return $outcomes;
     }
 
-    public function updateExisting(ProductImportRow $row): bool
+    public function updateExisting(ProductImportRow $row, ?Batch $batch = null): bool
     {
         $product = $this->findExisting($row);
 
@@ -101,7 +102,7 @@ final class RoutesProductImportRow
         }
 
         // The core importer looks products up by slug, so the file handle is replaced with the stored one.
-        $this->importer->import($row->withHandle((string) $product->slug));
+        $this->importer->import($row->withHandle((string) $product->slug), $batch);
 
         return true;
     }

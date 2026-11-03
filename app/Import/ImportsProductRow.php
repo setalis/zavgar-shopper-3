@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Import;
 
 use App\Models\AttributeProduct;
+use Illuminate\Bus\Batch;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Shopper\Core\Enum\FieldType;
@@ -22,10 +23,8 @@ final class ImportsProductRow
     /**
      * @return Model&ProductContract
      */
-    public function import(ProductImportRow $row): ProductContract
+    public function import(ProductImportRow $row, ?Batch $batch = null): ProductContract
     {
-        // The core importer dispatches image download jobs after its own transaction commits,
-        // so it must not be wrapped in an outer transaction.
         $product = $this->importer->import($row->product);
 
         DB::transaction(function () use ($product, $row): void {
@@ -34,7 +33,33 @@ final class ImportsProductRow
             $this->syncAttributes($product, $row->attributes);
         });
 
+        $this->queueImages($product, $row, $batch);
+
         return $product;
+    }
+
+    /**
+     * Image downloads stay in the import batch so it finishes only after they run.
+     *
+     * @param  Model&ProductContract  $product
+     */
+    private function queueImages(ProductContract $product, ProductImportRow $row, ?Batch $batch): void
+    {
+        $jobs = $this->importer->imageDownloads($product, $row->product);
+
+        if ($jobs === []) {
+            return;
+        }
+
+        if ($batch !== null) {
+            $batch->add($jobs);
+
+            return;
+        }
+
+        foreach ($jobs as $job) {
+            dispatch($job);
+        }
     }
 
     /**

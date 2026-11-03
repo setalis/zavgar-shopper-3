@@ -11,6 +11,7 @@ use Illuminate\Bus\Batchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
+use Shopper\Core\Enum\ImportStatus;
 use Shopper\Core\Models\ProductImport;
 use Throwable;
 
@@ -29,7 +30,7 @@ final class ImportProductsChunkJob implements ShouldQueue
 
     public function handle(RoutesProductImportRow $router): void
     {
-        if ($this->batch()?->cancelled()) {
+        if ($this->batch()?->cancelled() || ProductImport::query()->useWritePdo()->where('id', $this->importId)->value('status') === ImportStatus::Failed) {
             return;
         }
 
@@ -38,7 +39,7 @@ final class ImportProductsChunkJob implements ShouldQueue
 
         foreach ($this->rows as $row) {
             try {
-                $counts[$router->route($row, $this->importId)->value]++;
+                $counts[$router->route($row, $this->importId, $this->batch())->value]++;
             } catch (Throwable $e) {
                 $errors[] = ['handle' => $row->sku ?? $row->product->handle, 'message' => $e->getMessage()];
             }

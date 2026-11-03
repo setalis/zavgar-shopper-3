@@ -339,6 +339,31 @@ test('the downloadable template imports without errors', function (): void {
             'Матеріал' => ['Бавовна', 'Еластан'],
         ])
         ->and(Product::query()->where('slug', 'parfum-klasychnyi')->value('type'))->toBe(ProductType::Standard);
+
+    foreach ([
+        'https://example.com/images/futbolka.jpg',
+        'https://example.com/images/futbolka-blue.jpg',
+        'https://example.com/images/futbolka-red.jpg',
+        'https://example.com/images/parfum.jpg',
+    ] as $url) {
+        Queue::assertPushed(DownloadProductImageJob::class, fn (DownloadProductImageJob $job): bool => $job->url === $url);
+    }
+});
+
+test('a spreadsheet with only a header row completes the import', function (): void {
+    $relativePath = writeProductImportXlsx('header-only.xlsx', [
+        ['handle', 'name', 'sku'],
+    ]);
+
+    $import = createXlsxProductImport($relativePath, $this->admin->id);
+
+    resolve(StartProductImport::class)->execute($import);
+
+    $import->refresh();
+
+    expect($import->status)->toBe(ImportStatus::Completed)
+        ->and($import->batch_id)->toBeNull()
+        ->and($import->finished_at)->not->toBeNull();
 });
 
 test('it restores a soft-deleted product found by sku and makes it visible again', function (): void {
