@@ -22,6 +22,7 @@ use App\Livewire\Shopper\SlideOvers\ImportXlsx;
 use App\Livewire\Shopper\SlideOvers\UpdateVariant;
 use App\Sidebar\HomepageBannersSidebar;
 use App\Sidebar\ProductImportSidebar;
+use App\Storefront\Discounts\RegisteredCustomersEligibilityRule;
 use App\Support\StorefrontLocale;
 use Carbon\CarbonImmutable;
 use Filament\Support\Assets\AlpineComponent;
@@ -38,6 +39,8 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Livewire\Livewire;
 use ReflectionProperty;
+use Shopper\Cart\Discounts\DiscountEligibilityManager;
+use Shopper\Core\Enum\DiscountEligibility;
 use Shopper\Core\Events\Products\ProductImportCompleted;
 use Shopper\Core\Import\ImportManager;
 use Shopper\Sidebar\SidebarBuilder;
@@ -62,6 +65,36 @@ class AppServiceProvider extends ServiceProvider
         config([
             'shopper.components.product.components' => $components,
         ]);
+
+        $this->registerDiscountEligibilityRules();
+    }
+
+    /**
+     * The manager keeps registration order for the form options, so the rule is placed right after "Everyone".
+     */
+    protected function registerDiscountEligibilityRules(): void
+    {
+        $this->app->extend(
+            DiscountEligibilityManager::class,
+            function (DiscountEligibilityManager $manager): DiscountEligibilityManager {
+                $orderedManager = new DiscountEligibilityManager;
+                $registeredRule = new RegisteredCustomersEligibilityRule;
+
+                foreach ($manager->all() as $key => $rule) {
+                    $orderedManager->register($rule);
+
+                    if ($key === DiscountEligibility::Everyone->value) {
+                        $orderedManager->register($registeredRule);
+                    }
+                }
+
+                if ($orderedManager->for($registeredRule->key()) === null) {
+                    $orderedManager->register($registeredRule);
+                }
+
+                return $orderedManager;
+            },
+        );
     }
 
     public function boot(): void

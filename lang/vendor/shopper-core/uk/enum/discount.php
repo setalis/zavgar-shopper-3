@@ -17,6 +17,8 @@ return [
     'eligibility' => [
         'everyone' => 'Усі',
         'everyone_description' => 'Цю акцію може використати будь-хто.',
+        'registered_customers' => 'Усі зареєстровані клієнти',
+        'registered_customers_description' => 'Лише клієнти з обліковим записом можуть її використати.',
         'specific_customers' => 'Окремі клієнти',
         'customers_description' => 'Лише вибрані клієнти можуть її використати.',
     ],

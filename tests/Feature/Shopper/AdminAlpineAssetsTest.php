@@ -10,8 +10,7 @@ test('theme switcher keeps each alpine statement separate', function (): void {
         'theme' => 'light',
     ])->render();
 
-    expect($html)->toContain("theme = 'light';")
-        ->and($html)->toContain('dropdownOpen = false');
+    expect($html)->toMatch("/dropdownOpen = false;?\\s*\\n\\s*theme = 'light'/");
 });
 
 test('admin pages load republished filament scripts with the published file time', function (): void {
