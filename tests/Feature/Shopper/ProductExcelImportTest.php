@@ -488,6 +488,21 @@ test('users without permission cannot open the excel import panel', function ():
         ->assertForbidden();
 });
 
+test('users without permission cannot store an excel import', function (): void {
+    $user = User::factory()->create();
+    $user->givePermissionTo('products.create');
+
+    $component = Livewire::actingAs($user)->test(ImportXlsx::class);
+
+    $user->revokePermissionTo('products.create');
+
+    $component
+        ->call('store')
+        ->assertNotified(__('shopper::notifications.unauthorized.title'));
+
+    expect(ProductImport::query()->exists())->toBeFalse();
+});
+
 test('admins can import products from an uploaded excel file', function (): void {
     $relativePath = writeProductImportXlsx('upload.xlsx', [
         ['handle', 'name', 'sku'],

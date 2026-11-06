@@ -3,16 +3,22 @@
 declare(strict_types=1);
 
 use App\Models\Product;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Livewire;
 use Shopper\Core\Enum\PaymentStatus;
 use Shopper\Core\Models\Order;
 use Shopper\Core\Models\OrderItem;
+use Shopper\Database\Seeders\AuthTableSeeder;
 
 uses(RefreshDatabase::class);
 
 test('renders current top sellers when a previous cache entry stores product models', function (): void {
+    $this->seed(AuthTableSeeder::class);
+
+    $admin = User::factory()->create();
+    $admin->assignRole(config('shopper.admin.roles.admin'));
     $camera = Product::factory()->standard()->create([
         'name' => 'Cached Camera',
         'slug' => 'cached-camera',
@@ -54,7 +60,8 @@ test('renders current top sellers when a previous cache entry stores product mod
         1800,
     );
 
-    $component = Livewire::test('shopper-dashboard.top-selling-products')
+    $component = Livewire::actingAs($admin)
+        ->test('shopper-dashboard.top-selling-products')
         ->assertSee('Cached Camera')
         ->assertDontSee('Unpaid Lens');
 

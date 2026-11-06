@@ -124,6 +124,8 @@ final class ImportXlsx extends SlideOverComponent implements HasActions, HasSche
 
     public function store(): void
     {
+        $this->authorize('products.create');
+
         $this->validate();
 
         $file = $this->uploadedFile();
