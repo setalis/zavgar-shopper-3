@@ -117,7 +117,11 @@ export type Product = Omit<BaseProduct, 'brand' | 'variants'> &
         storefront_stock?: number;
         storefront_reviews_count?: number;
         storefront_average_rating?: number | null;
+        is_bundle?: boolean;
     };
+
+export type BundleComponent = App.DTO.BundleComponentData;
+export type BundleComposition = App.DTO.BundleCompositionData;
 
 export type ProductPrice = StorefrontPrice;
 

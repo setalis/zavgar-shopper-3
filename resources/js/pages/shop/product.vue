@@ -36,6 +36,7 @@ import { useWishlist } from '@/composables/useWishlist';
 import { home, login } from '@/routes';
 import * as shop from '@/routes/shop';
 import type {
+    BundleComposition,
     Product,
     ProductAttribute,
     ProductVariant,
@@ -81,6 +82,7 @@ const props = defineProps<{
     product: Product;
     variantOptions: VariantOptions | null;
     productAttributes: ProductAttribute[];
+    bundle: BundleComposition | null;
     canReview: boolean;
     hreflang: HreflangLink[];
 }>();
@@ -112,8 +114,7 @@ const unstructuredVariants = computed(() => {
 });
 
 const hasVariants = computed<boolean>(
-    () =>
-        hasStructuredVariants.value || unstructuredVariants.value.length > 0,
+    () => hasStructuredVariants.value || unstructuredVariants.value.length > 0,
 );
 
 watch(
@@ -366,7 +367,9 @@ const ratingDistribution = computed(() =>
     }),
 );
 
-const specSource = computed<SpecSource>(() => selectedVariant.value ?? props.product);
+const specSource = computed<SpecSource>(
+    () => selectedVariant.value ?? props.product,
+);
 
 function formatWeight(source: SpecSource): string | null {
     if (!source.weight_value) {
@@ -482,14 +485,17 @@ function setReviewRating(rating: number): void {
 }
 
 function submitReview(): void {
-    reviewForm.post(localized(ProductReviewController.store.url(props.product)), {
-        preserveScroll: true,
-        onSuccess: () => {
-            reviewForm.reset();
-            reviewForm.rating = 5;
-            reviewForm.is_recommended = false;
+    reviewForm.post(
+        localized(ProductReviewController.store.url(props.product)),
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                reviewForm.reset();
+                reviewForm.rating = 5;
+                reviewForm.is_recommended = false;
+            },
         },
-    });
+    );
 }
 </script>
 
@@ -503,11 +509,17 @@ function submitReview(): void {
             class="mb-8 flex flex-wrap items-center gap-1.5 font-mono text-xs tracking-[0.04em] text-ink-mute"
             :aria-label="t('shop.product.breadcrumb')"
         >
-            <Link :href="localized(home.url())" class="transition hover:text-brand">
+            <Link
+                :href="localized(home.url())"
+                class="transition hover:text-brand"
+            >
                 {{ t('shop.nav.home') }}
             </Link>
             <span aria-hidden="true" class="text-ink-faint">/</span>
-            <Link :href="localized(shop.index.url())" class="transition hover:text-brand">
+            <Link
+                :href="localized(shop.index.url())"
+                class="transition hover:text-brand"
+            >
                 {{ t('shop.nav.shop') }}
             </Link>
             <span aria-hidden="true" class="text-ink-faint">/</span>
@@ -591,8 +603,7 @@ function submitReview(): void {
                             {{
                                 (displayPrice.from
                                     ? `${t('shop.price.from')} `
-                                    : '') +
-                                money(displayPrice.amount, currency)
+                                    : '') + money(displayPrice.amount, currency)
                             }}
                         </span>
                         <span
@@ -644,7 +655,102 @@ function submitReview(): void {
                     }}
                 </span>
 
-                <div v-if="hasStructuredVariants && variantOptions" class="space-y-5">
+                <div
+                    v-if="bundle"
+                    class="mb-5 rounded-sm border border-rule p-4"
+                >
+                    <p
+                        class="mb-3 font-mono text-xs tracking-[0.08em] text-ink-mute uppercase"
+                    >
+                        {{ t('shop.product.bundle.title') }}
+                    </p>
+
+                    <ul class="divide-y divide-rule">
+                        <li
+                            v-for="item in bundle.items"
+                            :key="`${item.productId}-${item.variantId ?? 0}`"
+                            class="flex items-center gap-3 py-2.5"
+                        >
+                            <img
+                                v-if="item.thumbnail"
+                                :src="item.thumbnail"
+                                :alt="item.name"
+                                loading="lazy"
+                                class="size-12 shrink-0 rounded-sm bg-muted object-cover"
+                            />
+                            <div class="min-w-0 flex-1">
+                                <Link
+                                    v-if="item.slug && item.isAvailable"
+                                    :href="
+                                        localized(
+                                            shop.product.url({
+                                                product: item.slug,
+                                            }),
+                                        )
+                                    "
+                                    class="text-sm font-semibold text-ink transition hover:text-brand"
+                                >
+                                    {{ item.name }}
+                                </Link>
+                                <span
+                                    v-else
+                                    class="text-sm font-semibold text-ink-mute"
+                                >
+                                    {{ item.name }}
+                                </span>
+                                <p
+                                    v-if="item.variantName"
+                                    class="text-xs text-ink-mute"
+                                >
+                                    {{ item.variantName }}
+                                </p>
+                            </div>
+                            <span
+                                class="shrink-0 font-mono text-sm text-ink-soft"
+                            >
+                                &times;{{ item.quantity }}
+                            </span>
+                            <span
+                                v-if="item.unitAmount !== null"
+                                class="w-24 shrink-0 text-right font-mono text-sm text-ink-soft"
+                            >
+                                {{
+                                    money(
+                                        item.unitAmount * item.quantity,
+                                        currency,
+                                    )
+                                }}
+                            </span>
+                        </li>
+                    </ul>
+
+                    <div
+                        v-if="bundle.componentsTotal !== null"
+                        class="mt-3 flex flex-wrap items-baseline justify-between gap-2 border-t border-rule pt-3 text-sm"
+                    >
+                        <span class="text-ink-mute">
+                            {{ t('shop.product.bundle.components_total') }}
+                            <span class="font-mono line-through">
+                                {{ money(bundle.componentsTotal, currency) }}
+                            </span>
+                        </span>
+                        <span
+                            v-if="bundle.savings"
+                            class="rounded-[4px] bg-card-green px-2 py-1 font-mono text-xs font-semibold text-paper"
+                        >
+                            {{
+                                t('shop.product.bundle.savings', {
+                                    amount: money(bundle.savings, currency),
+                                })
+                            }}
+                        </span>
+                    </div>
+                </div>
+
+                <div
+                    v-if="hasStructuredVariants && variantOptions"
+                    class="space-y-5"
+                >
                     <div
                         v-for="option in variantOptions.productOptions"
                         :key="option.id"
@@ -702,10 +808,7 @@ function submitReview(): void {
                     </div>
                 </div>
 
-                <div
-                    v-else-if="unstructuredVariants.length"
-                    class="space-y-5"
-                >
+                <div v-else-if="unstructuredVariants.length" class="space-y-5">
                     <div>
                         <p
                             class="mb-3 font-mono text-xs tracking-[0.08em] text-ink-mute uppercase"
@@ -777,7 +880,7 @@ function submitReview(): void {
                         type="button"
                         variant="outline"
                         size="icon-lg"
-                        :class="wishlisted ? 'text-rose border-rose/30' : ''"
+                        :class="wishlisted ? 'border-rose/30 text-rose' : ''"
                         :aria-label="
                             wishlisted
                                 ? t('shop.product.remove_from_wishlist')
@@ -848,10 +951,12 @@ function submitReview(): void {
                         </dt>
                         <dd
                             v-if="spec.html"
-                            class="prose prose-sm max-w-none prose-zinc text-sm text-ink"
+                            class="prose prose-sm max-w-none text-sm text-ink prose-zinc"
                             v-html="spec.value"
                         />
-                        <dd v-else class="text-sm text-ink">{{ spec.value }}</dd>
+                        <dd v-else class="text-sm text-ink">
+                            {{ spec.value }}
+                        </dd>
                     </div>
                 </dl>
             </TabsContent>
@@ -931,20 +1036,15 @@ function submitReview(): void {
                             {{ t('shop.product.review_form.sign_in') }}
                             <Link
                                 :href="login.url()"
-                                class="font-semibold text-brand transition hover:text-brand-dark"
+                                class="hover:text-brand-dark font-semibold text-brand transition"
                             >
                                 {{ t('shop.nav.sign_in') }}
                             </Link>
                         </p>
 
-                        <p
-                            v-else-if="!canReview"
-                            class="text-sm text-ink-soft"
-                        >
+                        <p v-else-if="!canReview" class="text-sm text-ink-soft">
                             {{
-                                t(
-                                    'shop.product.review_form.already_submitted',
-                                )
+                                t('shop.product.review_form.already_submitted')
                             }}
                         </p>
 
@@ -996,7 +1096,9 @@ function submitReview(): void {
                                         />
                                     </button>
                                 </div>
-                                <InputError :message="reviewForm.errors.rating" />
+                                <InputError
+                                    :message="reviewForm.errors.rating"
+                                />
                             </div>
 
                             <div class="space-y-2">
@@ -1009,7 +1111,9 @@ function submitReview(): void {
                                     type="text"
                                     autocomplete="off"
                                 />
-                                <InputError :message="reviewForm.errors.title" />
+                                <InputError
+                                    :message="reviewForm.errors.title"
+                                />
                             </div>
 
                             <div class="space-y-2">
@@ -1074,7 +1178,9 @@ function submitReview(): void {
                                         {{ reviewAuthorName(review) }}
                                     </p>
                                     <p class="font-mono text-xs text-ink-mute">
-                                        {{ formatReviewDate(review.created_at) }}
+                                        {{
+                                            formatReviewDate(review.created_at)
+                                        }}
                                     </p>
                                 </div>
 

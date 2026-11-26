@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Shop;
 
+use App\Actions\Bundle\BuildBundleComposition;
 use App\Actions\Product\BuildProductAttributes;
 use App\Actions\Product\BuildVariantOptions;
 use App\Actions\Product\FilterByStorefrontPrice;
@@ -95,7 +96,7 @@ final class ProductController extends Controller
         ]);
     }
 
-    public function show(Product $product, BuildProductAttributes $buildProductAttributes): Response
+    public function show(Product $product, BuildProductAttributes $buildProductAttributes, BuildBundleComposition $buildBundleComposition): Response
     {
         abort_unless($product->isPublished(), 404);
 
@@ -151,6 +152,7 @@ final class ProductController extends Controller
             'product' => $product,
             'variantOptions' => $variantOptions,
             'productAttributes' => $buildProductAttributes->handle($product),
+            'bundle' => $buildBundleComposition->handle($product),
             'canReview' => $this->canReview($product),
             'hreflang' => storefront_hreflang('shop.product', ['product' => $product]),
         ]);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Actions\Bundle\ResolveBundleStock;
 use App\Concerns\HasCatalogTranslations;
 use App\Concerns\InteractsWithStorefrontMedia;
 use App\Concerns\ResolvesStorefrontPrice;
@@ -12,10 +13,12 @@ use App\Concerns\ResolvesStorefrontStock;
 use App\Support\NormalizesSearchTerm;
 use App\Support\StorefrontLocale;
 use App\Traits\HasProductPricing;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Query\Builder as QueryBuilder;
+use Shopper\Core\Enum\ProductType;
 use Shopper\Core\Models\Price;
 use Shopper\Models\Product as Model;
 
@@ -34,6 +37,57 @@ final class Product extends Model
     public function attributeProducts(): HasMany
     {
         return $this->hasMany(AttributeProduct::class, 'product_id');
+    }
+
+    /**
+     * @return HasMany<ProductBundleItem, $this>
+     */
+    public function bundleItems(): HasMany
+    {
+        return $this->hasMany(ProductBundleItem::class, 'bundle_id')->orderBy('position')->orderBy('id');
+    }
+
+    public function isBundle(): bool
+    {
+        return $this->isStandard() && (bool) $this->is_bundle;
+    }
+
+    /**
+     * A bundle carries no inventory of its own: its stock is how many complete sets the components allow.
+     */
+    public function getStock(string|DateTimeInterface|null $date = null): int
+    {
+        if ($this->isBundle()) {
+            return resolve(ResolveBundleStock::class)->handle($this);
+        }
+
+        return parent::getStock($date);
+    }
+
+    public function inStock(int $quantity = 1): bool
+    {
+        if ($this->isBundle()) {
+            return resolve(ResolveBundleStock::class)->canFulfil($this, $quantity);
+        }
+
+        return parent::inStock($quantity);
+    }
+
+    /** @param  Builder<self>  $query */
+    #[Scope]
+    protected function bundles(Builder $query): Builder
+    {
+        return $query
+            ->where('type', ProductType::Standard)
+            ->where('is_bundle', true);
+    }
+
+    protected function casts(): array
+    {
+        return [
+            ...parent::casts(),
+            'is_bundle' => 'boolean',
+        ];
     }
 
     /**

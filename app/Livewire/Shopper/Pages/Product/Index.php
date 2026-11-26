@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Livewire\Shopper\Pages\Product;
 
+use App\Models\Product as AppProduct;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Notifications\Notification;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 use Mckenziearts\Icons\Untitledui\Enums\Untitledui;
@@ -22,6 +25,18 @@ final class Index extends ShopperIndex
         $canDelete = shopper()->auth()->user()?->can('products.delete') ?? false;
 
         return $this->withCopyAction(parent::table($table))
+            ->pushColumns([
+                TextColumn::make('bundle_badge')
+                    ->label(__('backend.bundles.single'))
+                    ->state(fn (AppProduct $record): ?string => $record->isBundle() ? __('backend.bundles.single') : null)
+                    ->badge()
+                    ->color('primary')
+                    ->toggleable(),
+            ])
+            ->pushFilters([
+                TernaryFilter::make('is_bundle')
+                    ->label(__('backend.bundles.filter')),
+            ])
             ->groupedBulkActions([
                 DeleteBulkAction::make()
                     ->label(__('shopper::forms.actions.delete'))

@@ -11,6 +11,25 @@ declare namespace App {
             phoneNumber: string | null;
             countryId: number;
         };
+        export type BundleComponentData = {
+            productId: number;
+            variantId: number | null;
+            name: string;
+            variantName: string | null;
+            slug: string | null;
+            sku: string | null;
+            thumbnail: string | null;
+            quantity: number;
+            unitAmount: number | null;
+            isAvailable: boolean;
+        };
+        export type BundleCompositionData = {
+            items: App.DTO.BundleComponentData[];
+            componentsTotal: number | null;
+            bundleAmount: number | null;
+            savings: number | null;
+            stock: number;
+        };
         export type CountryByZoneData = {
             zoneId: number;
             zoneCode: string | null;

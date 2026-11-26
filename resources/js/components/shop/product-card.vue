@@ -114,6 +114,12 @@ function toggleWishlist(event: MouseEvent): void {
             >
                 {{ t('shop.product.badge_featured') }}
             </span>
+            <span
+                v-else-if="product.is_bundle"
+                class="absolute top-2.5 left-2.5 rounded-[4px] bg-primary px-2.5 py-1 font-mono text-[10px] font-semibold tracking-[0.05em] text-paper"
+            >
+                {{ t('shop.product.badge_bundle') }}
+            </span>
 
             <button
                 type="button"

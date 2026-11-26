@@ -22,7 +22,10 @@ use App\Livewire\Shopper\SlideOvers\ImportXlsx;
 use App\Livewire\Shopper\SlideOvers\UpdateVariant;
 use App\Sidebar\HomepageBannersSidebar;
 use App\Sidebar\ProductImportSidebar;
+use App\Sidebar\ProductSections\BundleSection;
+use App\Sidebar\ProductSections\InventorySection as BundleAwareInventorySection;
 use App\Storefront\Discounts\RegisteredCustomersEligibilityRule;
+use App\Storefront\Stock\BundleAwareStockReserver;
 use App\Support\StorefrontLocale;
 use Carbon\CarbonImmutable;
 use Filament\Support\Assets\AlpineComponent;
@@ -40,9 +43,11 @@ use Illuminate\Validation\Rules\Password;
 use Livewire\Livewire;
 use ReflectionProperty;
 use Shopper\Cart\Discounts\DiscountEligibilityManager;
+use Shopper\Core\Contracts\StockReserver;
 use Shopper\Core\Enum\DiscountEligibility;
 use Shopper\Core\Events\Products\ProductImportCompleted;
 use Shopper\Core\Import\ImportManager;
+use Shopper\Navigation\Product\Sections\InventorySection;
 use Shopper\Sidebar\SidebarBuilder;
 
 class AppServiceProvider extends ServiceProvider
@@ -66,7 +71,21 @@ class AppServiceProvider extends ServiceProvider
             'shopper.components.product.components' => $components,
         ]);
 
+        $sections = config('shopper.components.product.sections', []);
+        $sections[InventorySection::class] = false;
+        $sections[BundleAwareInventorySection::class] = true;
+        $sections[BundleSection::class] = true;
+
+        config([
+            'shopper.components.product.sections' => $sections,
+        ]);
+
         $this->registerDiscountEligibilityRules();
+
+        $this->app->extend(
+            StockReserver::class,
+            fn (StockReserver $reserver): StockReserver => new BundleAwareStockReserver($reserver),
+        );
     }
 
     /**

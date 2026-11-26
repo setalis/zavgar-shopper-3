@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Shop;
 
+use App\Actions\Bundle\BuildBundleComposition;
 use App\Actions\Cart\AddToCart;
 use App\Actions\LocalizeCatalog;
 use App\CheckoutSession;
@@ -20,6 +21,7 @@ use Shopper\Cart\Exceptions\InsufficientStockException;
 use Shopper\Cart\Exceptions\MissingPriceException;
 use Shopper\Cart\Exceptions\PaymentSessionCollectedException;
 use Shopper\Cart\Exceptions\QuantityRuleViolationException;
+use Shopper\Cart\Models\CartLine;
 use Shopper\Core\Exceptions\PaymentProviderUnavailableException;
 
 final class CartController extends Controller
@@ -28,13 +30,20 @@ final class CartController extends Controller
         private CartGateway $cart,
     ) {}
 
-    public function index(LocalizeCatalog $localizeCatalog): Response
+    public function index(LocalizeCatalog $localizeCatalog, BuildBundleComposition $buildBundleComposition): Response
     {
         $cart = $this->cart->current();
 
         $cart?->load(['lines.purchasable.media']);
 
         $localizeCatalog->cart($cart);
+
+        $cart?->lines
+            ->filter(fn (CartLine $line): bool => $line->purchasable instanceof Product && $line->purchasable->isBundle())
+            ->each(fn (CartLine $line) => $line->purchasable->setAttribute(
+                'bundle_contents',
+                $buildBundleComposition->contents($line->purchasable),
+            ));
 
         return Inertia::render('shop/cart', [
             'cart' => $cart,

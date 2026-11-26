@@ -15,6 +15,7 @@ use App\Livewire\Shopper\Pages\MenuItems\Index as MenuItemsIndex;
 use App\Livewire\Shopper\Pages\News\Edit as NewsArticleEdit;
 use App\Livewire\Shopper\Pages\News\Index as NewsArticlesIndex;
 use App\Livewire\Shopper\Pages\PendingProducts\Index as PendingProductsIndex;
+use App\Livewire\Shopper\Pages\Product\Bundle as ProductBundle;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/products/import-template.xlsx', DownloadProductImportXlsxTemplateController::class)
@@ -29,6 +30,9 @@ Route::get('/products/pending', PendingProductsIndex::class)
     ->name('products.pending.index');
 Route::get('/products/blacklist', BlacklistedProductsIndex::class)
     ->name('products.blacklist.index');
+Route::get('/products/{product}/edit/bundle', ProductBundle::class)
+    ->middleware('can:products.edit')
+    ->name('products.edit.bundle');
 
 Route::get('/categories/{category}/filters', CategoryFiltersEdit::class)
     ->name('categories.filters');

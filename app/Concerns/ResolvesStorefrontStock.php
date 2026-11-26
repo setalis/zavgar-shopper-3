@@ -17,7 +17,7 @@ trait ResolvesStorefrontStock
     public function initializeResolvesStorefrontStock(): void
     {
         $this->append(['storefront_stock']);
-        $this->makeHidden(['storefront_variant_stock', 'storefront_own_stock']);
+        $this->makeHidden(['storefront_variant_stock', 'storefront_own_stock', 'bundleItems']);
     }
 
     /**
@@ -29,10 +29,16 @@ trait ResolvesStorefrontStock
     {
         $productsTable = $query->getModel()->getTable();
 
-        return $query->addSelect([
-            'storefront_variant_stock' => $this->variantStockSubquery($productsTable),
-            'storefront_own_stock' => $this->ownStockSubquery($productsTable),
-        ]);
+        return $query
+            ->addSelect([
+                'storefront_variant_stock' => $this->variantStockSubquery($productsTable),
+                'storefront_own_stock' => $this->ownStockSubquery($productsTable),
+            ])
+            ->with([
+                'bundleItems' => fn ($items) => $items->withComponentStock(),
+                'bundleItems.product',
+                'bundleItems.variant',
+            ]);
     }
 
     /**
@@ -41,6 +47,10 @@ trait ResolvesStorefrontStock
     protected function storefrontStock(): Attribute
     {
         return Attribute::get(function (): int {
+            if ($this->isBundle()) {
+                return $this->getStock();
+            }
+
             if ($this->type === ProductType::Variant) {
                 if (array_key_exists('storefront_variant_stock', $this->attributes)) {
                     return (int) $this->attributes['storefront_variant_stock'];

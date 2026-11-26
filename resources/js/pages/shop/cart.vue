@@ -60,12 +60,21 @@ function lineName(purchasable: Cart['lines'][number]['purchasable']): string {
     return (purchasable as { name?: string }).name ?? '';
 }
 
+type BundleContent = { name: string; variant: string | null; quantity: number };
+
+function bundleContents(
+    purchasable: Cart['lines'][number]['purchasable'],
+): BundleContent[] {
+    return (
+        (purchasable as { bundle_contents?: BundleContent[] })
+            .bundle_contents ?? []
+    );
+}
+
 function purchasableImage(
     purchasable: Cart['lines'][number]['purchasable'],
 ): string | null {
-    return (
-        purchasable.thumbnail ?? purchasable.images?.[0]?.url ?? null
-    );
+    return purchasable.thumbnail ?? purchasable.images?.[0]?.url ?? null;
 }
 
 function confirmClear(): void {
@@ -155,6 +164,24 @@ function confirmClear(): void {
                                     )
                                 }}
                             </p>
+                            <ul
+                                v-if="bundleContents(line.purchasable).length"
+                                class="mt-2 space-y-0.5 text-xs text-ink-mute"
+                                :aria-label="t('shop.product.bundle.contents')"
+                            >
+                                <li
+                                    v-for="(
+                                        content, contentIndex
+                                    ) in bundleContents(line.purchasable)"
+                                    :key="contentIndex"
+                                >
+                                    {{ content.quantity }} &times;
+                                    {{ content.name
+                                    }}<template v-if="content.variant">
+                                        / {{ content.variant }}</template
+                                    >
+                                </li>
+                            </ul>
                         </div>
 
                         <QtyStepper

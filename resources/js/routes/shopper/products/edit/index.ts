@@ -872,6 +872,103 @@ related.head = (args: { product: string | number } | [product: string | number ]
         })
     
     related.form = relatedForm
+/**
+* @see \App\Livewire\Shopper\Pages\Product\Bundle::__invoke
+ * @see app/Livewire/Shopper/Pages/Product/Bundle.php:7
+ * @route '/cpanel/products/{product}/edit/bundle'
+ */
+export const bundle = (args: { product: string | number } | [product: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: bundle.url(args, options),
+    method: 'get',
+})
+
+bundle.definition = {
+    methods: ["get","head"],
+    url: '/cpanel/products/{product}/edit/bundle',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Livewire\Shopper\Pages\Product\Bundle::__invoke
+ * @see app/Livewire/Shopper/Pages/Product/Bundle.php:7
+ * @route '/cpanel/products/{product}/edit/bundle'
+ */
+bundle.url = (args: { product: string | number } | [product: string | number ] | string | number, options?: RouteQueryOptions) => {
+    if (typeof args === 'string' || typeof args === 'number') {
+        args = { product: args }
+    }
+
+    
+    if (Array.isArray(args)) {
+        args = {
+                    product: args[0],
+                }
+    }
+
+    args = applyUrlDefaults(args)
+
+    const parsedArgs = {
+                        product: args.product,
+                }
+
+    return bundle.definition.url
+            .replace('{product}', parsedArgs.product.toString())
+            .replace(/\/+$/, '') + queryParams(options)
+}
+
+/**
+* @see \App\Livewire\Shopper\Pages\Product\Bundle::__invoke
+ * @see app/Livewire/Shopper/Pages/Product/Bundle.php:7
+ * @route '/cpanel/products/{product}/edit/bundle'
+ */
+bundle.get = (args: { product: string | number } | [product: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: bundle.url(args, options),
+    method: 'get',
+})
+/**
+* @see \App\Livewire\Shopper\Pages\Product\Bundle::__invoke
+ * @see app/Livewire/Shopper/Pages/Product/Bundle.php:7
+ * @route '/cpanel/products/{product}/edit/bundle'
+ */
+bundle.head = (args: { product: string | number } | [product: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: bundle.url(args, options),
+    method: 'head',
+})
+
+    /**
+* @see \App\Livewire\Shopper\Pages\Product\Bundle::__invoke
+ * @see app/Livewire/Shopper/Pages/Product/Bundle.php:7
+ * @route '/cpanel/products/{product}/edit/bundle'
+ */
+    const bundleForm = (args: { product: string | number } | [product: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+        action: bundle.url(args, options),
+        method: 'get',
+    })
+
+            /**
+* @see \App\Livewire\Shopper\Pages\Product\Bundle::__invoke
+ * @see app/Livewire/Shopper/Pages/Product/Bundle.php:7
+ * @route '/cpanel/products/{product}/edit/bundle'
+ */
+        bundleForm.get = (args: { product: string | number } | [product: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+            action: bundle.url(args, options),
+            method: 'get',
+        })
+            /**
+* @see \App\Livewire\Shopper\Pages\Product\Bundle::__invoke
+ * @see app/Livewire/Shopper/Pages/Product/Bundle.php:7
+ * @route '/cpanel/products/{product}/edit/bundle'
+ */
+        bundleForm.head = (args: { product: string | number } | [product: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+            action: bundle.url(args, {
+                        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+                            _method: 'HEAD',
+                            ...(options?.query ?? options?.mergeQuery ?? {}),
+                        }
+                    }),
+            method: 'get',
+        })
+    
+    bundle.form = bundleForm
 const edit = {
     media: Object.assign(media, media),
 attributes: Object.assign(attributes, attributes),
@@ -882,6 +979,7 @@ shipping: Object.assign(shipping, shipping),
 files: Object.assign(files, files),
 seo: Object.assign(seo, seo),
 related: Object.assign(related, related),
+bundle: Object.assign(bundle, bundle),
 }
 
 export default edit
