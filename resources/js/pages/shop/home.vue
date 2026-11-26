@@ -8,7 +8,7 @@ import CollectionBanner from '@/components/shop/collection-banner.vue';
 import CompactProductCard from '@/components/shop/compact-product-card.vue';
 import Container from '@/components/shop/container.vue';
 import DiscountBanners from '@/components/shop/discount-banners.vue';
-import NewsletterBanner from '@/components/shop/newsletter-banner.vue';
+import RegistrationOfferBanner from '@/components/shop/registration-offer-banner.vue';
 import ProductCard from '@/components/shop/product-card.vue';
 import SectionHead from '@/components/shop/section-head.vue';
 import TrustBadges from '@/components/shop/trust-badges.vue';
@@ -167,7 +167,7 @@ const compactProducts = computed<Product[]>(() =>
 
     <BrandStrip v-if="brands.length" :brands="brands" />
 
-    <NewsletterBanner />
+    <RegistrationOfferBanner />
 
     <section class="pb-14 md:pb-20">
         <Container>

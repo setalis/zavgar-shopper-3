@@ -1,8 +1,12 @@
 import DownloadProductImportXlsxTemplateController from './DownloadProductImportXlsxTemplateController'
 import ExportProductsXlsxController from './ExportProductsXlsxController'
+import ExportAttributesXlsxController from './ExportAttributesXlsxController'
+import DownloadAttributeImportXlsxTemplateController from './DownloadAttributeImportXlsxTemplateController'
 const Shopper = {
     DownloadProductImportXlsxTemplateController: Object.assign(DownloadProductImportXlsxTemplateController, DownloadProductImportXlsxTemplateController),
 ExportProductsXlsxController: Object.assign(ExportProductsXlsxController, ExportProductsXlsxController),
+ExportAttributesXlsxController: Object.assign(ExportAttributesXlsxController, ExportAttributesXlsxController),
+DownloadAttributeImportXlsxTemplateController: Object.assign(DownloadAttributeImportXlsxTemplateController, DownloadAttributeImportXlsxTemplateController),
 }
 
 export default Shopper
